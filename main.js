@@ -14,6 +14,8 @@ import { Thruster } from './utils/Thruster.js';
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
 let thrusterL, thrusterR;
+let mainLight, fillLight, keyLight, ambientLight;
+
 const keys = {};
 let gameOver = false;
 const modelPaths = [
@@ -42,10 +44,7 @@ async function init() {
   starfield = await createStarfield(scene);
 
   // Illuminazione
-  const light = new THREE.PointLight(0xffffff, 1);
-  light.position.set(10, 10, 10);
-  scene.add(light);
-
+  setupDynamicLighting();
   // Carica modello navicella
   const { ship: loadedShip, thrusterL, thrusterR } = await loadSpaceship();
   ship = loadedShip;
@@ -102,6 +101,74 @@ async function loadAsteroidModels() {
   );
 }
 
+function setupDynamicLighting() {
+  // 1. Luce ambientale per illuminazione generale
+  ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Luce soffusa
+  scene.add(ambientLight);
+
+  // 2. Luce principale (Key Light) - segue la nave
+  keyLight = new THREE.DirectionalLight(0xfff8dc, 1.5);
+  keyLight.position.set(-30, 10, 20);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width = 2048;
+  keyLight.shadow.mapSize.height = 2048;
+  scene.add(keyLight);
+
+  // 3. Luce di riempimento (Fill Light) - illumina le ombre
+  fillLight = new THREE.DirectionalLight(0x4444ff, 0.3);
+  fillLight.position.set(30, 0, 5);
+  scene.add(fillLight);
+
+  // 4. Luce principale mobile che segue la nave
+  mainLight = new THREE.PointLight(0xffffff, 1.5, 100);
+  mainLight.position.set(0, 5, 5);
+  scene.add(mainLight);
+
+}
+
+// === AGGIORNAMENTO ILLUMINAZIONE DINAMICA ===
+function updateDynamicLighting() {
+  if (!ship) return;
+
+  const shipPosition = ship.position;
+  const cameraPosition = camera.position;
+  
+  // Aggiorna posizione luce principale - sempre tra camera e nave
+  const lightOffset = new THREE.Vector3()
+    .subVectors(cameraPosition, shipPosition)
+    .normalize()
+    .multiplyScalar(15);
+  
+  mainLight.position.copy(shipPosition).add(lightOffset);
+
+  // Aggiorna Key Light - sempre davanti alla nave dalla prospettiva della camera
+  const keyLightPosition = new THREE.Vector3()
+    .subVectors(cameraPosition, shipPosition)
+    .normalize()
+    .multiplyScalar(20);
+  keyLightPosition.y += 10; // Leggermente sopra
+  
+  keyLight.position.copy(shipPosition).add(keyLightPosition);
+  keyLight.lookAt(shipPosition);
+
+  // Aggiorna Fill Light - dal lato opposto
+  const fillLightPosition = new THREE.Vector3()
+    .subVectors(shipPosition, cameraPosition)
+    .normalize()
+    .multiplyScalar(15);
+  fillLightPosition.y -= 5; // Leggermente sotto
+  
+  fillLight.position.copy(shipPosition).add(fillLightPosition);
+  fillLight.lookAt(shipPosition);
+
+  // Intensità dinamica basata sulla velocità
+  const velocity = shipController.getVelocity();
+  const speed = velocity.length();
+  const speedMultiplier = 1 + (speed * 0.1);
+  
+  mainLight.intensity = 1.5 * speedMultiplier;
+  keyLight.intensity = 1.2 * speedMultiplier;
+}
 
 function setupEventListeners() {
   window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
@@ -148,6 +215,8 @@ function animate(time) {
   }
 
   cameraController.update(delta);
+
+  updateDynamicLighting();
 
   // Aggiorna starfield
   if (starfield) {
