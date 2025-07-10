@@ -103,7 +103,7 @@ async function loadAsteroidModels() {
 
 function setupDynamicLighting() {
   // 1. Luce ambientale per illuminazione generale
-  ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Luce soffusa
+  ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Luce soffusa
   scene.add(ambientLight);
 
   // 2. Luce principale (Key Light) - segue la nave
