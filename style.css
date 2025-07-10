@@ -1,0 +1,256 @@
+/**
+ * style.css
+ * Stili per Space Rescue Rush
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #00ff88;
+    overflow: hidden;
+    cursor: none;
+}
+
+#gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#gameCanvas {
+    display: block;
+    background: radial-gradient(circle at center, #001122 0%, #000000 100%);
+}
+
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.hud-element {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff88;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    text-shadow: 0 0 5px #00ff88;
+    backdrop-filter: blur(5px);
+}
+
+#timer {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 200px;
+}
+
+#timer.critical {
+    color: #ff3333;
+    border-color: #ff3333;
+    animation: pulse 0.5s infinite;
+    text-shadow: 0 0 10px #ff3333;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+#stats {
+    top: 20px;
+    left: 20px;
+}
+
+#energy {
+    bottom: 20px;
+    left: 20px;
+    width: 200px;
+}
+
+#energy-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+    border: 1px solid #00ff88;
+}
+
+#energy-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffaa00, #ffff00);
+    transition: width 0.2s;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+}
+
+#instructions {
+    bottom: 20px;
+    right: 20px;
+    max-width: 250px;
+    font-size: 12px;
+}
+
+#gameTitle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 40px;
+    border: 3px solid #00ff88;
+    border-radius: 15px;
+    font-size: 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+}
+
+#gameTitle h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px #00ff88;
+    background: linear-gradient(45deg, #00ff88, #0088ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+    from { filter: drop-shadow(0 0 10px #00ff88); }
+    to { filter: drop-shadow(0 0 20px #0088ff); }
+}
+
+#gameTitle p {
+    margin: 10px 0;
+    color: #cccccc;
+}
+
+#startButton {
+    background: linear-gradient(45deg, #00ff88, #0088ff);
+    color: #000;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+#startButton:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    filter: brightness(1.2);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ff88;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 150;
+    animation: crosshairPulse 2s ease-in-out infinite;
+}
+
+@keyframes crosshairPulse {
+    0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.crosshair::before,
+.crosshair::after {
+    content: '';
+    position: absolute;
+    background: #00ff88;
+    box-shadow: 0 0 5px #00ff88;
+}
+
+.crosshair::before {
+    top: 50%;
+    left: -5px;
+    right: -5px;
+    height: 2px;
+    transform: translateY(-50%);
+}
+
+.crosshair::after {
+    left: 50%;
+    top: -5px;
+    bottom: -5px;
+    width: 2px;
+    transform: translateX(-50%);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #gameTitle h1 {
+        font-size: 32px;
+    }
+    
+    #gameTitle {
+        padding: 20px;
+        font-size: 14px;
+    }
+    
+    .hud-element {
+        font-size: 12px;
+        padding: 8px;
+    }
+    
+    #timer {
+        font-size: 18px;
+    }
+}
+
+/* Loading animation */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #00ff88;
+    font-size: 18px;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
