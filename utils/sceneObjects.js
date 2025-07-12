@@ -31,7 +31,7 @@ export function createReferenceObjects(scene) {
 
   //createAsteroidField(scene);
   //createSpaceStation(scene);
-  createPlanet(scene);
+  //createPlanet(scene);
   
 
   console.log('Oggetti di riferimento aggiunti');
@@ -189,19 +189,3 @@ export function createSpaceStation(scene, position = new THREE.Vector3(0, 0, 100
   return stationGroup;
 }
 
-// Funzione per creare planets
-export function createPlanet(scene) {
-  const textureLoader = new THREE.TextureLoader();
-  const planetTexture = textureLoader.load('./assets/models/texture/space/8k_mars.jpg');
-
-  const planetGeometry = new THREE.SphereGeometry(6000, 64, 64); // più grande
-  const planetMaterial = new THREE.MeshStandardMaterial({ map: planetTexture });
-
-  const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-
-  // Spostalo "a destra e lontano" dalla navicella
-  planet.position.set(8000, 0, -10000); 
-
-  scene.add(planet);
-  return planet;
-}
