@@ -9,7 +9,7 @@ import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
-
+import { loadFBXModel, spawnFBXModel, updateAnimations } from './utils/sceneObjects.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
@@ -26,6 +26,7 @@ const modelPaths = [
 const dropRates = [0.4, 0.4, 0.2]; // somma = 1.0
 const playerDirection = new THREE.Vector3(); 
 let asteroidModels = []; // array globale per tenere i modelli caricati
+
 
 init()
 
@@ -49,6 +50,8 @@ async function init() {
   const { ship: loadedShip, thrusterL, thrusterR } = await loadSpaceship();
   ship = loadedShip;
   await loadAsteroidModels();
+  await spawnAstronaut();
+  //await loadAstronautModels();
 
   // Aggiungi oggetti di riferimento
   createReferenceObjects(scene);
@@ -67,6 +70,23 @@ async function init() {
   timer = new GameTimer(62);
   timer.start();
 }
+
+async function spawnAstronaut() {
+    try {
+        // Spawna il modello nella posizione (0, 0, 0)
+        const model = await spawnFBXModel(
+            './assets/models/Falling.fbx', 
+            scene, 
+            new THREE.Vector3(0, 0, 0)
+        );
+        
+        console.log('Modello spawnato con successo!');
+        return model;
+    } catch (error) {
+        console.error('Errore nello spawn del modello:', error);
+    }
+}
+
 
 async function loadSpaceship() {
   return new Promise((resolve, reject) => {
@@ -92,7 +112,6 @@ async function loadSpaceship() {
     }, undefined, reject);
   });
 }
-
 
 async function loadAsteroidModels() {
   const loader = new GLTFLoader();
@@ -216,6 +235,8 @@ function animate(time) {
 
   cameraController.update(delta);
 
+  
+
   updateDynamicLighting();
 
   // Aggiorna starfield
@@ -236,7 +257,9 @@ function animate(time) {
 
   // Asteroidi dinamici
   updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates);
-
+  //updateAstronauts(ship.position, playerDirection, scene);
+  updateAnimations(delta);
+  
   const secondsLeft = timer.getRemainingTime();
   //debugHUD.setTimer(secondsLeft);
   gameHUD.updateTimer(secondsLeft); // <-- AGGIORNAMENTO HUD

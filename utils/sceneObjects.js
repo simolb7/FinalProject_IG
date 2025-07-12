@@ -1,7 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
+import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 
 let minScale, maxScale;
+const mixers = []; // Array per tenere traccia di tutti i mixer attivi
+let activeAstronauts = [];
+const fbxLoader = new FBXLoader();
+
+
 export let activeAsteroids = [];
 
 export function createReferenceObjects(scene) {
@@ -73,8 +79,6 @@ export function updateAsteroidField(playerPosition, playerDirection, scene, mode
   });
 }
 
-
-
 function createRandomAsteroidInFront(center, direction, models, dropRates, radius) {
   const rand = Math.random();
   let modelIndex = dropRates.findIndex((rate, i, arr) =>
@@ -134,58 +138,92 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
 }
 
 
-// Funzione per creare stazioni spaziali
-export function createSpaceStation(scene, position = new THREE.Vector3(0, 0, 100)) {
-  const stationGroup = new THREE.Group();
-  
-  // Corpo centrale
-  const centralGeometry = new THREE.CylinderGeometry(8, 8, 20, 8);
-  const centralMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
-  const centralHub = new THREE.Mesh(centralGeometry, centralMaterial);
-  stationGroup.add(centralHub);
-  
-  // Anelli rotanti
-  for (let i = 0; i < 3; i++) {
-    const ringGeometry = new THREE.TorusGeometry(15 + i * 5, 2, 8, 16);
-    const ringMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
-    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-    ring.position.y = (i - 1) * 8;
-    stationGroup.add(ring);
-  }
-  
-  // Antenne
-  for (let i = 0; i < 4; i++) {
-    const antennaGeometry = new THREE.CylinderGeometry(0.2, 0.2, 15, 4);
-    const antennaMaterial = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
-    const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
-    
-    const angle = (i / 4) * Math.PI * 2;
-    antenna.position.set(
-      Math.cos(angle) * 12,
-      Math.random() * 10 - 5,
-      Math.sin(angle) * 12
-    );
-    antenna.rotation.z = angle;
-    
-    stationGroup.add(antenna);
-  }
-  
-  stationGroup.position.copy(position);
-  scene.add(stationGroup);
-  
-  // Animazione rotazione
-  function animateStation() {
-    stationGroup.rotation.y += 0.005;
-    stationGroup.children.forEach((child, index) => {
-      if (child.geometry instanceof THREE.TorusGeometry) {
-        child.rotation.x += 0.01 * (index + 1);
-      }
+export function loadFBXModel(path, scene, options = {}) {
+    const {
+        position = new THREE.Vector3(0, 0, 0),
+        rotation = new THREE.Vector3(0, 0, 0),
+        scale = new THREE.Vector3(0.08, 0.08, 0.08)
+    } = options;
+
+    return new Promise((resolve, reject) => {
+        fbxLoader.load(
+            path,
+            (fbx) => {
+                // Applica trasformazioni
+                fbx.position.copy(position);
+                fbx.rotation.setFromVector3(rotation);
+                fbx.scale.copy(scale);
+
+                // Configura ombre
+                fbx.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                // Gestione animazioni da Mixamo
+                if (fbx.animations && fbx.animations.length > 0) {
+                    const mixer = new THREE.AnimationMixer(fbx);
+                    
+                    // Prende la prima animazione (di solito c'è solo quella da Mixamo)
+                    const action = mixer.clipAction(fbx.animations[0]);
+                    
+                    // Configura l'animazione per loop infinito
+                    action.setLoop(THREE.LoopRepeat);
+                    action.clampWhenFinished = false;
+                    
+                    // Avvia l'animazione immediatamente
+                    action.play();
+                    
+                    // Salva il mixer per gli aggiornamenti
+                    fbx.mixer = mixer;
+                    mixers.push(mixer);
+                    
+                    console.log(`Animazione avviata per il modello: ${fbx.animations[0].name}`);
+                }
+
+                // Aggiunge alla scena
+                scene.add(fbx);
+
+                console.log(`Modello FBX caricato: ${path}`);
+                resolve(fbx);
+            },
+            (progress) => {
+                console.log(`Caricamento: ${((progress.loaded / progress.total) * 100).toFixed(2)}%`);
+            },
+            (error) => {
+                console.error('Errore nel caricamento del modello FBX:', error);
+                reject(error);
+            }
+        );
     });
-    requestAnimationFrame(animateStation);
-  }
-  animateStation();
-  
-  console.log('Stazione spaziale creata');
-  return stationGroup;
 }
 
+/**
+ * Spawna un modello FBX in una posizione specifica
+ * @param {string} path - Percorso del file FBX
+ * @param {THREE.Scene} scene - Scena dove spawnare il modello
+ * @param {THREE.Vector3} spawnPosition - Posizione di spawn
+ * @param {Object} additionalOptions - Opzioni aggiuntive
+ * @returns {Promise} Promise che si risolve con il modello spawnato
+ */
+export function spawnFBXModel(path, scene, spawnPosition, additionalOptions = {}) {
+    const options = {
+        position: spawnPosition,
+        ...additionalOptions
+    };
+
+    return loadFBXModel(path, scene, options);
+}
+
+/**
+ * Aggiorna tutte le animazioni attive
+ * Chiamala nel loop di rendering del main
+ * @param {number} delta - Tempo delta per l'aggiornamento
+ */
+export function updateAnimations(delta) {
+    mixers.forEach(mixer => {
+        mixer.update(delta);
+    });
+}
