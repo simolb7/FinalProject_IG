@@ -9,7 +9,8 @@ import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
-import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations} from './utils/sceneObjects.js';
+import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts} from './utils/sceneObjects.js';
+import { CollisionSystem } from './utils/CollisionSystem.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
@@ -27,10 +28,9 @@ const dropRates = [0.4, 0.4, 0.2]; // somma = 1.0
 const playerDirection = new THREE.Vector3(); 
 let asteroidModels = []; // array globale per tenere i modelli caricati
 
+const collisionSystem = new CollisionSystem();
 
-let spawnedModels = [];
-
-
+let score = 0;
 
 init()
 
@@ -135,7 +135,7 @@ async function loadSpaceship() {
     loader.load('./assets/models/spaceship.glb', (gltf) => {
       
       ship = gltf.scene; 
-      ship.scale.set(1.5, 1.5, 1.5);
+      ship.scale.set(1.7, 1.7, 1.7);
       ship.position.set(0, 0, 0);
       scene.add(ship); 
 
@@ -276,8 +276,6 @@ function animate(time) {
 
   cameraController.update(delta);
 
-  
-
   updateDynamicLighting();
 
   // Aggiorna starfield
@@ -307,6 +305,25 @@ function animate(time) {
 
   //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
+
+  const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
+    
+    // Se ci sono collisioni, rimuovi gli astronauti
+    collidedAstronauts.forEach(astronaut => {
+        // Rimuovi dalla scena
+
+        console.log(`Collisione con astronauta: `, astronaut);
+        scene.remove(astronaut);
+        
+        // Rimuovi dalla lista
+        const index = activeAstronauts.indexOf(astronaut);
+        if (index > -1) {
+            activeAstronauts.splice(index, 1);
+        }
+        score += 1;
+        gameHUD.updateStatus(score);
+    });
+
   const secondsLeft = timer.getRemainingTime();
   //debugHUD.setTimer(secondsLeft);
   gameHUD.updateTimer(secondsLeft); // <-- AGGIORNAMENTO HUD

@@ -17,7 +17,7 @@ export class GameHUD {
   }
 
   createPanels() {
-    this.createPanel('status', 'Saved: 0<br>Score: 0', { top: '10px', left: '10px' });
+    this.createPanel('status', 'Score: ${score}', { top: '10px', left: '10px' });
     this.createPanel('timer', 'COLLAPSE: 60s', { top: '10px', left: '50%', transform: 'translateX(-50%)' });
     this.createPanel('objective', `
       <b>🎯 OBJECTIVE:</b><br>
@@ -84,9 +84,9 @@ export class GameHUD {
   }
 
   // --- Update Methods ---
-  updateStatus(saved, score) {
+  updateStatus(score) {
     const panel = document.getElementById('hud-status');
-    panel.innerHTML = `Saved: ${saved}<br>Score: ${score}`;
+    panel.innerHTML = `Score: ${score}`;
   }
 
   updateTimer(seconds) {
