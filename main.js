@@ -9,7 +9,7 @@ import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
-import { loadFBXModel, spawnFBXModel, updateAnimations } from './utils/sceneObjects.js';
+import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations} from './utils/sceneObjects.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
@@ -26,6 +26,10 @@ const modelPaths = [
 const dropRates = [0.4, 0.4, 0.2]; // somma = 1.0
 const playerDirection = new THREE.Vector3(); 
 let asteroidModels = []; // array globale per tenere i modelli caricati
+
+
+let spawnedModels = [];
+
 
 
 init()
@@ -50,7 +54,18 @@ async function init() {
   const { ship: loadedShip, thrusterL, thrusterR } = await loadSpaceship();
   ship = loadedShip;
   await loadAsteroidModels();
-  await spawnAstronaut();
+
+  await initOptimizedSpawn('./assets/models/Falling.fbx', {
+            maxModels: 30,
+            spawnRadius: { min: 15, max: 60 },
+            despawnDistance: 120,
+            spawnCooldown: 1500,
+            spawnRate: 0.15
+        });
+
+  //await spawnAstronaut();
+  //await spawnRandomModels();
+  
   //await loadAstronautModels();
 
   // Aggiungi oggetti di riferimento
@@ -70,6 +85,32 @@ async function init() {
   timer = new GameTimer(62);
   timer.start();
 }
+
+
+async function spawnRandomModels() {
+    try {
+        spawnedModels = await spawnMultipleFBXModels(
+            './assets/models/Falling.fbx', 
+            scene, 
+            20,
+            {
+                spawnArea: { 
+                    x: { min: -30, max: 30 }, 
+                    y: { min: 0, max: 0 }, 
+                    z: { min: -30, max: 30 } 
+                },
+                rotation: new THREE.Vector3(0, Math.PI, 0), // Ruotali se necessario
+                scale: new THREE.Vector3(0.08, 0.08, 0.08),
+                spacing: 8
+            }
+        );
+        
+        console.log('20 modelli spawnati con successo!');
+    } catch (error) {
+        console.error('Errore nello spawn:', error);
+    }
+}
+
 
 async function spawnAstronaut() {
     try {
@@ -94,12 +135,12 @@ async function loadSpaceship() {
     loader.load('./assets/models/spaceship.glb', (gltf) => {
       
       ship = gltf.scene; 
-      ship.scale.set(1.25, 1.25, 1.25);
+      ship.scale.set(1.5, 1.5, 1.5);
       ship.position.set(0, 0, 0);
       scene.add(ship); 
 
-      thrusterL = new Thruster(ship, { position: new THREE.Vector3(-4, 1, -8) });
-      thrusterR = new Thruster(ship, { position: new THREE.Vector3(4, 1, -8) });
+      thrusterL = new Thruster(ship, { position: new THREE.Vector3(-4, 1, -7) });
+      thrusterR = new Thruster(ship, { position: new THREE.Vector3(4, 1, -7) });
 
       if (gltf.animations.length) {
         const mixer = new THREE.AnimationMixer(ship);
@@ -257,9 +298,15 @@ function animate(time) {
 
   // Asteroidi dinamici
   updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates);
+  updateOptimizedSpawn(
+        scene,
+        ship.position,
+        playerDirection,
+        delta
+    );
+
   //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
-  
   const secondsLeft = timer.getRemainingTime();
   //debugHUD.setTimer(secondsLeft);
   gameHUD.updateTimer(secondsLeft); // <-- AGGIORNAMENTO HUD
