@@ -13,16 +13,15 @@ let modelTemplate = null; // Il modello template caricato una sola volta
 let isModelLoaded = false;
 
 const SPAWN_CONFIG = {
-    maxModels: 12,                    // Mantenuto per non sovraffollare
-    spawnRadius: { min: 100, max: 1000 }, // Area molto grande mantenuta
-    despawnDistance: 1200,            // Aumentato per essere coerente con spawnRadius max
-    spawnCooldown: 5000,              // Ridotto leggermente per avere più opportunità di raccolta
-    spawnRate: 0.05,                  // Aumentato leggermente per compensare la distribuzione più ampia
-    preferredDirection: false,        // DISATTIVATO per spawn completamente casuale
-    directionBias: 0.0,               // Azzerato per eliminare qualsiasi bias direzionale
-    fullCircleSpawn: true,            // Abilita spawn a 360 gradi
-    minDistanceBetweenModels: 2000      // Distanza minima tra modelli per evitare cluster
+    spawnRadius: {min: 10, max: 30},           
+    minDistanceFromPlayer: 200,  
+    maxModels: 40,              // Aumenta il numero massimo
+    spawnCooldown: 500,        // Spawn più frequente
+    despawnDistance: 5000,       // MOLTO più lontano per non despawnare
+    minDistanceBetweenModels: 230, 
 };
+
+
 export let activeAsteroids = [];
 
 export function createReferenceObjects(scene) {
@@ -152,6 +151,8 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
   };
 }
 
+//ASTRONAUT FUNCTION GENERATOR
+
 export async function loadModelTemplate(path) {
     if (isModelLoaded) {
         console.log('Template già caricato');
@@ -195,7 +196,6 @@ export async function loadModelTemplate(path) {
         );
     });
 }
-
 
 function cloneModelDeep(original) {
     // Usa il metodo clone nativo di Three.js che gestisce correttamente skeletal mesh
@@ -314,6 +314,92 @@ export async function initOptimizedSpawn(modelPath, config = {}) {
     return modelTemplate;
 }
 
+function createAstronautInFront(center, direction, radius) {
+    if (!modelTemplate) {
+        console.warn('Template non caricato');
+        return null;
+    }
+
+    const actualRadius = (typeof radius === 'object') ? radius.max : radius;
+
+    // Direzione base del giocatore
+    const forward = direction.clone().normalize();
+    
+    // CAMPO DI SPAWN: lontano e distribuito
+    const minDistance = 150;  // Molto lontano
+    const maxDistance = 300;  // Ancora più lontano
+    const distance = minDistance + Math.random() * (maxDistance - minDistance);
+    
+    // Crea un cono davanti al giocatore
+    const angle = (Math.random() - 0.5) * Math.PI * 0.8; // Cono di 144 gradi
+    const height = (Math.random() - 0.5) * 50; // Variazione in altezza
+    
+    // Ruota la direzione forward per l'angolo
+    const rotatedDirection = new THREE.Vector3(
+        forward.x * Math.cos(angle) - forward.z * Math.sin(angle),
+        forward.y,
+        forward.x * Math.sin(angle) + forward.z * Math.cos(angle)
+    ).normalize();
+    
+    // Posizione finale
+    const finalPos = center.clone()
+        .add(rotatedDirection.multiplyScalar(distance))
+        .add(new THREE.Vector3(0, height, 0));
+
+    console.log(`Astronauta spawnato nel campo visivo:`);
+    console.log(`- Distanza: ${distance.toFixed(2)}`);
+    console.log(`- Angolo: ${(angle * 180 / Math.PI).toFixed(2)}°`);
+    console.log(`- Posizione: ${finalPos.x.toFixed(2)}, ${finalPos.y.toFixed(2)}, ${finalPos.z.toFixed(2)}`);
+
+    // Verifica che non sia troppo vicino ad altri astronauti
+    const tooClose = activeModels.some(model => {
+        const distance = finalPos.distanceTo(model.position);
+        return distance < SPAWN_CONFIG.minDistanceBetweenModels;
+    });
+
+    if (tooClose) {
+        return null;
+    }
+
+    try {
+        const clonedModel = cloneModelDeep(modelTemplate);
+        clonedModel.position.copy(finalPos);
+        clonedModel.rotation.set(0, Math.random() * Math.PI * 2, 0);
+        
+        // Scala appropriata per la distanza
+        const scale = 0.05; // Più grande per essere visibile in lontananza
+        clonedModel.scale.setScalar(scale);
+
+        // resto del codice per animazioni...
+        if (modelTemplate.animations && modelTemplate.animations.length > 0) {
+            const mixer = new THREE.AnimationMixer(clonedModel);
+            const clonedAnimations = modelTemplate.animations.map(clip => clip.clone());
+            const action = mixer.clipAction(clonedAnimations[0]);
+            
+            action.setLoop(THREE.LoopRepeat);
+            action.clampWhenFinished = false;
+            
+            const randomStart = Math.random() * clonedAnimations[0].duration;
+            action.time = randomStart;
+            action.play();
+            
+            clonedModel.mixer = mixer;
+            clonedModel.animations = clonedAnimations;
+            mixers.push(mixer);
+        }
+
+        clonedModel.userData.spawnTime = Date.now();
+        clonedModel.userData.isProceduralSpawn = true;
+
+        return clonedModel;
+
+    } catch (error) {
+        console.error('Errore nella creazione dell\'astronauta:', error);
+        return null;
+    }
+}
+
+
 export function updateOptimizedSpawn(scene, playerPosition, playerDirection, deltaTime) {
     if (!modelTemplate) {
         console.warn('Template non caricato, skip spawn');
@@ -325,35 +411,25 @@ export function updateOptimizedSpawn(scene, playerPosition, playerDirection, del
     // Rimuovi modelli troppo lontani
     despawnDistantModels(scene, playerPosition);
     
-    // Controlla se possiamo spawnare nuovi modelli
+    // Controlla se possiamo spawnare
     if (shouldSpawn(currentTime) && activeModels.length < SPAWN_CONFIG.maxModels) {
-        const spawnPosition = calculateSpawnPosition(playerPosition, playerDirection);
+        let newAstronaut = null;
         
-        if (spawnPosition && isValidSpawnPosition(spawnPosition, playerPosition)) {
-            console.log(`Spawnando clone in posizione: ${spawnPosition.x.toFixed(2)}, ${spawnPosition.y.toFixed(2)}, ${spawnPosition.z.toFixed(2)}`);
-            spawnClonedModel(scene, spawnPosition);
+        // SEMPRE spawn davanti per il gameplay
+        newAstronaut = createAstronautInFront(
+            playerPosition, 
+            playerDirection, 
+            SPAWN_CONFIG.spawnRadius
+        );
+        
+        if (newAstronaut) {
+            scene.add(newAstronaut);
+            activeModels.push(newAstronaut);
             lastSpawnTime = currentTime;
+            
+            console.log(`Astronauta spawnato in posizione: ${newAstronaut.position.x.toFixed(2)}, ${newAstronaut.position.y.toFixed(2)}, ${newAstronaut.position.z.toFixed(2)}`);
+            console.log(`Totale astronauti attivi: ${activeModels.length}`);
         }
-    }
-}
-
-function spawnClonedModel(scene, spawnPosition) {
-    try {
-        const clonedModel = cloneModel(scene, {
-            position: spawnPosition,
-            rotation: new THREE.Vector3(0, Math.random() * Math.PI * 2, 0),
-            scale: new THREE.Vector3(0.05, 0.05, 0.05)
-        });
-        
-        // Aggiungi metadati
-        clonedModel.userData.spawnTime = Date.now();
-        clonedModel.userData.isProceduralSpawn = true;
-        
-        activeModels.push(clonedModel);
-        
-        console.log(`Clone spawnato. Totale attivi: ${activeModels.length}`);
-    } catch (error) {
-        console.error('Errore nello spawn del clone:', error);
     }
 }
 
@@ -368,56 +444,6 @@ export function updateAnimations(delta) {
     }
 }
 
-
-
-function calculateSpawnPosition(playerPosition, playerDirection) {
-    // Genera un angolo completamente casuale (0-360 gradi)
-    const randomAngle = Math.random() * Math.PI * 2;
-    
-    // Genera una distanza casuale nel range specificato
-    const minRadius = SPAWN_CONFIG.spawnRadius.min;
-    const maxRadius = SPAWN_CONFIG.spawnRadius.max;
-    const randomDistance = minRadius + Math.random() * (maxRadius - minRadius);
-    
-    // Calcola la posizione basata su angolo e distanza casuali
-    const spawnPosition = new THREE.Vector3(
-        playerPosition.x + Math.cos(randomAngle) * randomDistance,
-        playerPosition.y, // Mantieni l'altezza del giocatore
-        playerPosition.z + Math.sin(randomAngle) * randomDistance
-    );
-    
-    // Verifica che non sia troppo vicino ad altri modelli esistenti
-    if (SPAWN_CONFIG.minDistanceBetweenModels) {
-        const tooClose = activeModels.some(model => {
-            const distance = spawnPosition.distanceTo(model.position);
-            return distance < SPAWN_CONFIG.minDistanceBetweenModels;
-        });
-        
-        if (tooClose) {
-            // Ritenta con una nuova posizione (max 3 tentativi)
-            for (let i = 0; i < 3; i++) {
-                const newAngle = Math.random() * Math.PI * 2;
-                const newDistance = minRadius + Math.random() * (maxRadius - minRadius);
-                
-                spawnPosition.set(
-                    playerPosition.x + Math.cos(newAngle) * newDistance,
-                    playerPosition.y,
-                    playerPosition.z + Math.sin(newAngle) * newDistance
-                );
-                
-                const stillTooClose = activeModels.some(model => {
-                    const distance = spawnPosition.distanceTo(model.position);
-                    return distance < SPAWN_CONFIG.minDistanceBetweenModels;
-                });
-                
-                if (!stillTooClose) break;
-            }
-        }
-    }
-    
-    return spawnPosition;
-}
-
 function shouldSpawn(currentTime) {
     const cooldownPassed = currentTime - lastSpawnTime > SPAWN_CONFIG.spawnCooldown;
     const randomChance = Math.random() < SPAWN_CONFIG.spawnRate;
@@ -425,33 +451,20 @@ function shouldSpawn(currentTime) {
     return cooldownPassed && randomChance;
 }
 
-function isValidSpawnPosition(spawnPosition, playerPosition) {
-    const distance = spawnPosition.distanceTo(playerPosition);
-    
-    // Controlla distanza minima e massima
-    if (distance < SPAWN_CONFIG.spawnRadius.min || distance > SPAWN_CONFIG.spawnRadius.max) {
-        return false;
-    }
-    
-    // Controlla se c'è già un modello troppo vicino
-    const minDistanceBetweenModels = 5;
-    for (const model of activeModels) {
-        if (model.position.distanceTo(spawnPosition) < minDistanceBetweenModels) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
 function despawnDistantModels(scene, playerPosition) {
+    console.log('DEBUG despawn - limite distanza:', SPAWN_CONFIG.despawnDistance); // AGGIUNGI QUESTO
+    
     const modelsToRemove = [];
+    const maxDistance = 600;
     
     activeModels.forEach((model, index) => {
         const distance = model.position.distanceTo(playerPosition);
         
-        if (distance > SPAWN_CONFIG.despawnDistance) {
+        console.log(`Modello ${index}: distanza ${distance.toFixed(2)}, limite ${SPAWN_CONFIG.despawnDistance}`); // AGGIUNGI QUESTO
+        
+        if (distance > maxDistance) {
             modelsToRemove.push({ model, index });
+            console.log(`-> Modello ${index} sarà rimosso`); // AGGIUNGI QUESTO
         }
     });
     
