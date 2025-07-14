@@ -18,6 +18,13 @@ export class GameTimer {
     return Math.floor(remaining);
   }
 
+  getElapsedTime() {
+    if (!this.running || this.startTime === null) return 0;
+    
+    const elapsed = (performance.now() - this.startTime) / 1000;
+    return elapsed; // Restituisce il tempo preciso senza arrotondamenti
+  }
+
   isExpired() {
     return this.getRemainingTime() <= 0;
   }

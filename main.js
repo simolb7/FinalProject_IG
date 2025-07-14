@@ -9,7 +9,7 @@ import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
-import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts} from './utils/sceneObjects.js';
+import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids} from './utils/sceneObjects.js';
 import { CollisionSystem } from './utils/CollisionSystem.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
@@ -242,10 +242,34 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+
+function endGame() {
+    // Evita chiamate multiple
+    if (gameOver) return;
+    
+    console.log('Game Over!');
+    gameOver = true;
+    
+    // Ferma il timer
+    if (timer) {
+        timer.stop();
+    }
+    
+    // Mostra schermata finale
+    const elapsedTime = timer.startTime ? (performance.now() - timer.startTime) / 1000 : 0;
+    console.log('Calculated elapsed time:', elapsedTime-1);
+    gameHUD.showGameOver(score, elapsedTime-1);
+    
+    // Opzionale: rimuovi event listeners per impedire movimento
+    window.removeEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+    window.removeEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+}
+
 function animate(time) {
   requestAnimationFrame(animate);
 
   if (!ship) return;
+  if (gameOver) return;
 
   const delta = (time - (animate.prevTime || time)) / 1400;
   animate.prevTime = time;
@@ -309,7 +333,7 @@ function animate(time) {
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     
     // Se ci sono collisioni, rimuovi gli astronauti
-    collidedAstronauts.forEach(astronaut => {
+  collidedAstronauts.forEach(astronaut => {
         // Rimuovi dalla scena
 
         const collisionPoint = new THREE.Vector3().addVectors(
@@ -332,7 +356,34 @@ function animate(time) {
         }
         score += 1;
         gameHUD.updateStatus(score);
-    });
+  });
+
+  const collidedAsteroids = collisionSystem.checkShipAsteroidCollisions(ship, activeAsteroids);
+
+  // Se ci sono collisioni con asteroidi, ferma il gioco
+  if (collidedAsteroids.length > 0) {
+      collidedAsteroids.forEach(asteroid => {
+          // Animazione di esplosione dell'asteroide
+          //collisionSystem.explodeAsteroid(asteroid, scene, ship);
+          collisionSystem.explodeShip(ship, scene);
+          // Rimuovi dalla lista
+          const index = activeAsteroids.indexOf(asteroid);
+          if (index > -1) {
+              activeAsteroids.splice(index, 1);
+      }
+          
+          console.log(`Collisione con asteroide: `, asteroid);
+      });
+
+      //cameraController.setFollowSpeed(0);
+      cameraController.enabled = false;
+      setTimeout(() => {
+        endGame();
+      }, 2500);  // 2500ms = 2.5 secondi di esplosione
+
+      // Impedisci ulteriori collisioni e azioni dopo che il gioco è finito
+      
+  }
 
   const secondsLeft = timer.getRemainingTime();
   //debugHUD.setTimer(secondsLeft);

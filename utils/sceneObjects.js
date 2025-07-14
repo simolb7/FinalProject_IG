@@ -407,8 +407,6 @@ export function updateOptimizedSpawn(scene, playerPosition, playerDirection, del
             lastSpawnTime = currentTime;
           
         }
-
-        console.log(`Astronaut: `, activeAstronauts);
     }
 }
 

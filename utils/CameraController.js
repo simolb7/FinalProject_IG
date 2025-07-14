@@ -4,6 +4,7 @@ export class CameraController {
   constructor(camera, ship) {
     this.camera = camera;
     this.ship = ship;
+    this.enabled = true;
     
     // Posizione attuale della camera (per interpolazione fluida)
     this.cameraPosition = new THREE.Vector3();
@@ -21,11 +22,13 @@ export class CameraController {
 
   update(delta) {
     if (!this.ship) return;
+    if (!this.enabled) return;
 
     this.updateThirdPersonCamera();
   }
 
   updateThirdPersonCamera() {
+    if (!this.enabled) return;
     // Calcola posizione ideale della camera basata sulla rotazione della navicella
     const idealOffset = this.offset.clone()
       .applyQuaternion(this.ship.quaternion)
