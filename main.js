@@ -2,8 +2,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
 import { ShipController } from './utils/ShipController.js';
 import { CameraController } from './utils/CameraController.js';
-import { createStarfield } from './utils/starfield.js';
-import { createReferenceObjects, updateAsteroidField  } from './utils/sceneObjects.js';
+import { createStarfield} from './utils/starfield.js';
+import {  updateAsteroidField  } from './utils/sceneObjects.js';
 import { DebugHUD } from './utils/debugHUD.js';
 import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
@@ -30,6 +30,7 @@ let asteroidModels = []; // array globale per tenere i modelli caricati
 
 const collisionSystem = new CollisionSystem();
 
+
 let score = 0;
 
 init()
@@ -47,7 +48,6 @@ async function init() {
 
   // Crea starfield
   starfield = await createStarfield(scene);
-
   // Illuminazione
   setupDynamicLighting();
   // Carica modello navicella
@@ -355,6 +355,8 @@ function animate(time) {
             activeAstronauts.splice(index, 1);
         }
         score += 1;
+        timer.addTime();
+        //gameHUD.showTimeBonus();
         gameHUD.updateStatus(score);
   });
 
@@ -363,9 +365,11 @@ function animate(time) {
   // Se ci sono collisioni con asteroidi, ferma il gioco
   if (collidedAsteroids.length > 0) {
       collidedAsteroids.forEach(asteroid => {
+
           // Animazione di esplosione dell'asteroide
           //collisionSystem.explodeAsteroid(asteroid, scene, ship);
           collisionSystem.explodeShip(ship, scene);
+        //collisionSystem.explodeShip(ship, scene);
           // Rimuovi dalla lista
           const index = activeAsteroids.indexOf(asteroid);
           if (index > -1) {

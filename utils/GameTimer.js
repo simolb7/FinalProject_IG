@@ -10,6 +10,10 @@ export class GameTimer {
     this.running = true;
   }
 
+  addTime(seconds = 3) {
+    this.duration += seconds;
+  }
+
   getRemainingTime() {
     if (!this.running || this.startTime === null) return this.duration;
 

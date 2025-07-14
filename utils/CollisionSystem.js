@@ -94,113 +94,44 @@ export class CollisionSystem {
         return collisions;
     }
 
-    explodeAsteroid(asteroid, scene, ship) {
-            if (!asteroid || !asteroid.mesh || asteroid.exploding) return;
-            
-            asteroid.exploding = true;
-            const asteroidMesh = asteroid.mesh;
-            const originalScale = asteroidMesh.scale.clone();
-            const startTime = Date.now();
-            const duration = 800; // Aumentato a 800ms per un'esplosione più visibile
-            
-            // Calcola il punto di collisione più accurato
-            const collisionPoint = new THREE.Vector3().addVectors(
-                asteroidMesh.position,
-                ship.position
-            ).multiplyScalar(0.5);
-            
-            const originalPosition = asteroidMesh.position.clone();
-            
-            // Cambia il materiale per effetto esplosione
-            const originalMaterial = asteroidMesh.material;
-            const explosionMaterial = originalMaterial.clone();
-            explosionMaterial.emissive = new THREE.Color(0xff4400);
-            asteroidMesh.material = explosionMaterial;
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Effetto esplosione migliorato
-                let scaleMultiplier;
-                let emissiveIntensity;
-                
-                if (progress < 0.2) {
-                    // Prima fase: espansione rapida
-                    scaleMultiplier = 1 + (progress / 0.2) * 1.5;
-                    emissiveIntensity = progress / 0.2;
-                } else if (progress < 0.6) {
-                    // Seconda fase: mantenimento
-                    scaleMultiplier = 2.5;
-                    emissiveIntensity = 1;
-                } else {
-                    // Terza fase: riduzione e fade
-                    const shrinkProgress = (progress - 0.6) / 0.4;
-                    scaleMultiplier = 2.5 * (1 - shrinkProgress);
-                    emissiveIntensity = 1 - shrinkProgress;
-                }
-                
-                const scale = originalScale.clone().multiplyScalar(scaleMultiplier);
-                asteroidMesh.scale.copy(scale);
-                
-                // Aggiorna colore emissivo
-                explosionMaterial.emissive.setRGB(
-                    0.8 * emissiveIntensity,
-                    0.3 * emissiveIntensity,
-                    0.1 * emissiveIntensity
-                );
-                
-                // Rotazione più drammatica
-                asteroidMesh.rotation.x += 0.15;
-                asteroidMesh.rotation.y += 0.2;
-                asteroidMesh.rotation.z += 0.1;
-                
-                // Movimento verso il punto di collisione
-                asteroidMesh.position.lerpVectors(originalPosition, collisionPoint, progress * 0.4);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    scene.remove(asteroidMesh);
-                }
-            };
-            
-            animate();
+        
+
+    explosdeShip(ship, scene) {
+        console.log("🟡 explodeShip - INIZIO");
+
+        if (!ship) {
+            console.error("❌ Nave non definita");
+            return;
+        }
+        
+        if (isShipExploding) {
+            console.warn("⚠️ Nave già in esplosione");
+            return;
         }
 
+        isShipExploding = true;
 
-explodeShip(ship, scene) {
-    console.log("🟡 explodeShip - INIZIO");
+        const center = ship.position.clone();
+        console.log("📍 Posizione esplosione:", center);
 
-    if (!ship) {
-        console.error("❌ Nave non definita");
-        return;
+        ship.visible = false;
+        console.log("🚫 Nave nascosta");
+
+        const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const debugSphere = new THREE.Mesh(geometry, material);
+        debugSphere.position.copy(center);
+        scene.add(debugSphere);
+        console.log("🔴 Sfera rossa aggiunta");
+
+        setTimeout(() => {
+            scene.remove(debugSphere);
+            console.log("🧹 Sfera rimossa");
+        }, 2000);
     }
-    
-    if (isShipExploding) {
-        console.warn("⚠️ Nave già in esplosione");
-        return;
-    }
 
-    isShipExploding = true;
 
-     const center = ship.position.clone();
-    console.log("📍 Posizione esplosione:", center);
+    // Aggiungi queste funzioni alla tua classe CollisionSystem
 
-    ship.visible = false;
-    console.log("🚫 Nave nascosta");
-
-    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const debugSphere = new THREE.Mesh(geometry, material);
-    debugSphere.position.copy(center);
-    scene.add(debugSphere);
-    console.log("🔴 Sfera rossa aggiunta");
-
-    setTimeout(() => {
-        scene.remove(debugSphere);
-        console.log("🧹 Sfera rimossa");
-    }, 2000);
 }
 
-}
