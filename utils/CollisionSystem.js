@@ -35,4 +35,42 @@ export class CollisionSystem {
 
         return collisions;
     }
+
+    shrinkAstronaut(astronaut, scene, ship) {
+        if (!astronaut || astronaut.shrinking) return;
+        
+        astronaut.shrinking = true;
+        const originalScale = astronaut.scale.clone();
+        const startTime = Date.now();
+        const duration = 150; // 1 secondo
+        
+        // Calcola il punto di collisione (punto medio tra astronauta e navicella)
+        const collisionPoint = new THREE.Vector3().addVectors(
+            astronaut.position,
+            ship.position
+        ).multiplyScalar(0.5);
+        
+        // Sposta l'astronauta verso il punto di collisione durante l'animazione
+        const originalPosition = astronaut.position.clone();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Riduce la scala
+            const scale = originalScale.clone().multiplyScalar(1 - progress);
+            astronaut.scale.copy(scale);
+            
+            // Sposta verso il punto di collisione
+            astronaut.position.lerpVectors(originalPosition, collisionPoint, progress);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                scene.remove(astronaut);
+            }
+        };
+        
+        animate();
+    }
 }

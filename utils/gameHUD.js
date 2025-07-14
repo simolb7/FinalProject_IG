@@ -17,7 +17,7 @@ export class GameHUD {
   }
 
   createPanels() {
-    this.createPanel('status', 'Score: ${score}', { top: '10px', left: '10px' });
+    this.createPanel('status', 'Score: 0', { top: '10px', left: '10px' });
     this.createPanel('timer', 'COLLAPSE: 60s', { top: '10px', left: '50%', transform: 'translateX(-50%)' });
     this.createPanel('objective', `
       <b>🎯 OBJECTIVE:</b><br>
@@ -82,6 +82,62 @@ export class GameHUD {
     wrapper.appendChild(this.energyBar);
     this.container.appendChild(wrapper);
   }
+
+  showScorePopup(worldPosition, camera, renderer) {
+    // Converti la posizione 3D in coordinate dello schermo
+    const vector = worldPosition.clone();
+    vector.project(camera);
+    
+    const screenX = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+    const screenY = (vector.y * -0.5 + 0.5) * renderer.domElement.clientHeight;
+    
+    // Crea l'elemento del popup
+    const popup = document.createElement('div');
+    popup.textContent = '+1';
+    popup.style.cssText = `
+      position: fixed;
+      left: ${screenX}px;
+      top: ${screenY}px;
+      font-family: 'Orbitron', sans-serif;
+      color: #00ff88;
+      font-size: 24px;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 1000;
+      transform: translate(-50%, -50%);
+      text-shadow: 0 0 10px #00ff88;
+    `;
+    
+    // Aggiungi al container
+    this.container.appendChild(popup);
+    
+    // Animazione di fade out e movimento verso l'alto
+    let opacity = 1;
+    let yOffset = 0;
+    const startTime = Date.now();
+    const duration = 2000; // 2 secondi
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = elapsed / duration;
+      
+      if (progress < 1) {
+        opacity = 1 - progress;
+        yOffset = progress * 50; // Si sposta verso l'alto
+        
+        popup.style.opacity = opacity;
+        popup.style.transform = `translate(-50%, -50%) translateY(-${yOffset}px)`;
+        
+        requestAnimationFrame(animate);
+      } else {
+        // Rimuovi l'elemento
+        this.container.removeChild(popup);
+      }
+    };
+    
+    animate();
+  }
+
 
   // --- Update Methods ---
   updateStatus(score) {

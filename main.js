@@ -69,7 +69,7 @@ async function init() {
   //await loadAstronautModels();
 
   // Aggiungi oggetti di riferimento
-  createReferenceObjects(scene);
+  //createReferenceObjects(scene);
   stormManager = new SolarStormManager(scene, ship);
 
   // Setup controllers
@@ -312,8 +312,18 @@ function animate(time) {
     collidedAstronauts.forEach(astronaut => {
         // Rimuovi dalla scena
 
+        const collisionPoint = new THREE.Vector3().addVectors(
+            astronaut.position,
+            ship.position
+        ).multiplyScalar(0.5);
+    
+    // Mostra il popup +1
+        gameHUD.showScorePopup(collisionPoint, camera, renderer);
+        collisionSystem.shrinkAstronaut(astronaut, scene, ship);
+
+
         console.log(`Collisione con astronauta: `, astronaut);
-        scene.remove(astronaut);
+        //scene.remove(astronaut);
         
         // Rimuovi dalla lista
         const index = activeAstronauts.indexOf(astronaut);
