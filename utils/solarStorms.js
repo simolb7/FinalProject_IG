@@ -66,12 +66,12 @@ export class SolarStorm {
 
 
 export class SolarStormManager {
-  constructor(scene, ship, maxStorms = 5) {
+  constructor(scene, ship, maxStorms = 30) {
     this.scene = scene;
     this.ship = ship;
     this.maxStorms = maxStorms;
     this.storms = [];
-    this.spawnInterval = 15;
+    this.spawnInterval = 8;
     this.lastSpawnTime = 0;
   }
 

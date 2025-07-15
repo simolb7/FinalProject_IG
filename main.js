@@ -10,7 +10,7 @@ import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
 import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids} from './utils/sceneObjects.js';
-import { CollisionSystem } from './utils/CollisionSystem.js';
+import { CollisionSystem, createShipExplosion, updateExplosions, destroyExplosionSystem, setExplosionGameEnded } from './utils/CollisionSystem.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
@@ -29,7 +29,6 @@ const playerDirection = new THREE.Vector3();
 let asteroidModels = []; // array globale per tenere i modelli caricati
 
 const collisionSystem = new CollisionSystem();
-
 
 let score = 0;
 
@@ -276,6 +275,7 @@ function animate(time) {
 
 
   const timeElapsed = performance.now() / 1000; // tempo in secondi
+  updateExplosions(delta);
   
 
   // Aggiorna tempeste
@@ -329,6 +329,7 @@ function animate(time) {
 
   //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
+ 
 
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     
@@ -368,17 +369,21 @@ function animate(time) {
 
           // Animazione di esplosione dell'asteroide
           //collisionSystem.explodeAsteroid(asteroid, scene, ship);
-          collisionSystem.explodeShip(ship, scene);
+         
         //collisionSystem.explodeShip(ship, scene);
           // Rimuovi dalla lista
-          const index = activeAsteroids.indexOf(asteroid);
+      const index = activeAsteroids.indexOf(asteroid);
           if (index > -1) {
               activeAsteroids.splice(index, 1);
       }
           
-          console.log(`Collisione con asteroide: `, asteroid);
+        console.log(`Collisione con asteroide: `, asteroid);
       });
 
+      const shipSize = ship.scale ? ship.scale.x : 1.0;
+      createShipExplosion(scene, camera, ship.position.clone(), ship, shipSize);
+      // Segna il sistema come finito
+      setExplosionGameEnded(true);
       //cameraController.setFollowSpeed(0);
       cameraController.enabled = false;
       setTimeout(() => {
