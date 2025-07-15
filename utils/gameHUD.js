@@ -11,112 +11,371 @@ export class GameHUD {
       color: #00ff88;
       z-index: 999;
     `;
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes glow {
-        0%, 100% { text-shadow: 0 0 10px #ff4444; }
-        50% { text-shadow: 0 0 20px #ff4444, 0 0 30px #ff4444; }
-      }
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      @keyframes pulseTimer {
-        0%, 100% { transform: translateX(-50%) scale(1); }
-        50% { transform: translateX(-50%) scale(1.1); }
-      }
-    `;
-    document.head.appendChild(style); // <-- IMPORTANTE: aggiungi al head!
+
+    this.createAdvancedStyles();
     document.body.appendChild(this.container);
     this.createPanels();
   }
 
-  createPanels() {
-    this.createPanel('status', 'Score: 0', { top: '10px', left: '10px' });
-    this.createPanel('timer', 'COLLAPSE: 60s', { top: '10px', left: '50%', transform: 'translateX(-50%)' });
-    this.createPanel('objective', `
-      <b>🎯 OBJECTIVE:</b><br><br>
-      Rescue as many astronauts as you can before time runs out!<br>
-      Each rescue grants +3 seconds<br><br>
-      ⚠️ <b>WARNING:</b><br><br>
-      Avoid asteroids and space storms !<br>
-           
-    `, { bottom: '10px', right: '10px', width: '260px', fontSize: '12px' });
-    this.createEnergyBar();
+  createAdvancedStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes glow {
+        0%, 100% { 
+          text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444; 
+          box-shadow: 0 0 20px #ff4444, inset 0 0 20px rgba(255,68,68,0.1);
+        }
+        50% { 
+          text-shadow: 0 0 20px #ff4444, 0 0 30px #ff4444, 0 0 40px #ff4444; 
+          box-shadow: 0 0 30px #ff4444, inset 0 0 30px rgba(255,68,68,0.2);
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+      }
+      
+      @keyframes pulseTimer {
+        0%, 100% { 
+          transform: translateX(-50%) scale(1); 
+          filter: brightness(1);
+        }
+        50% { 
+          transform: translateX(-50%) scale(1.05); 
+          filter: brightness(1.3);
+        }
+      }
+      
+      @keyframes dangerPulse {
+        0%, 100% { 
+          transform: translateX(-50%) scale(1); 
+          filter: brightness(1);
+          box-shadow: 0 0 20px rgba(255,68,68,0.3), inset 0 0 20px rgba(255,68,68,0.05);
+        }
+        50% { 
+          transform: translateX(-50%) scale(1.08); 
+          filter: brightness(1.5);
+          box-shadow: 0 0 40px rgba(255,68,68,0.8), inset 0 0 30px rgba(255,68,68,0.2);
+        }
+      }
+      
+      @keyframes energyPulse {
+        0%, 100% { 
+          opacity: 1; 
+          box-shadow: 0 0 6px rgba(0,255,136,0.8), 0 0 12px rgba(0,255,136,0.4); 
+        }
+        50% { 
+          opacity: 0.8; 
+          box-shadow: 0 0 12px rgba(0,255,136,1), 0 0 24px rgba(0,255,136,0.6); 
+        }
+      }
+      
+      @keyframes scanline {
+        0% { transform: translateX(-100%); opacity: 0; }
+        50% { opacity: 1; }
+        100% { transform: translateX(100%); opacity: 0; }
+      }
+      
+      @keyframes dataStream {
+        0% { transform: translateY(-100%); opacity: 0; }
+        50% { opacity: 0.3; }
+        100% { transform: translateY(100%); opacity: 0; }
+      }
+      
+      @keyframes timerBarDanger {
+        0%, 100% { 
+          background: linear-gradient(90deg, #ff4444 0%, #ff8888 50%, #ff4444 100%);
+          box-shadow: 0 0 15px rgba(255,68,68,0.8), inset 0 0 15px rgba(255,255,255,0.3);
+        }
+        50% { 
+          background: linear-gradient(90deg, #ff6666 0%, #ffaaaa 50%, #ff6666 100%);
+          box-shadow: 0 0 25px rgba(255,68,68,1), inset 0 0 25px rgba(255,255,255,0.5);
+        }
+      }
+      
+      .hud-panel {
+        position: relative;
+        background: linear-gradient(135deg, rgba(0,20,40,0.95) 0%, rgba(0,10,20,0.95) 100%);
+        border: 1px solid rgba(0,255,136,0.6);
+        border-radius: 8px;
+        padding: 12px 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 
+          0 0 20px rgba(0,255,136,0.3),
+          inset 0 0 20px rgba(0,255,136,0.05),
+          0 4px 15px rgba(0,0,0,0.3);
+        color: #00ff88;
+        font-size: 14px;
+        text-shadow: 0 0 8px rgba(0,255,136,0.8);
+        pointer-events: none;
+        overflow: hidden;
+        animation: fadeIn 0.8s ease-out;
+      }
+      
+      .hud-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00ff88, transparent);
+        animation: scanline 3s infinite;
+      }
+      
+      .hud-panel::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(0deg, transparent 0%, rgba(0,255,136,0.02) 50%, transparent 100%);
+        animation: dataStream 4s infinite;
+      }
+      
+      .energy-wrapper {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        width: 280px;
+        height: 50px;
+        background: linear-gradient(135deg, rgba(0,30,60,0.95) 0%, rgba(0,15,30,0.95) 100%);
+        border: 1px solid rgba(0,255,136,0.6);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        box-shadow: 
+          0 0 25px rgba(0,255,136,0.4),
+          inset 0 0 25px rgba(0,255,136,0.1),
+          0 6px 20px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        padding: 0 15px;
+        animation: fadeIn 1s ease-out;
+        overflow: hidden;
+      }
+      
+      .energy-wrapper::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,255,136,0.8), transparent);
+        animation: scanline 2s infinite;
+      }
+      
+      .timer-panel {
+        background: linear-gradient(135deg, rgba(20,20,40,0.95) 0%, rgba(10,10,20,0.95) 100%) !important;
+        border: 1px solid rgba(100,150,255,0.6) !important;
+        box-shadow: 
+          0 0 20px rgba(100,150,255,0.3),
+          inset 0 0 20px rgba(100,150,255,0.05),
+          0 4px 15px rgba(0,0,0,0.3) !important;
+        width: 280px !important;
+        transition: all 0.3s ease;
+      }
+      
+      .timer-panel.danger {
+        background: linear-gradient(135deg, rgba(40,0,20,0.95) 0%, rgba(20,0,10,0.95) 100%) !important;
+        border: 1px solid rgba(255,68,68,0.8) !important;
+        box-shadow: 
+          0 0 30px rgba(255,68,68,0.6),
+          inset 0 0 30px rgba(255,68,68,0.1),
+          0 4px 20px rgba(0,0,0,0.4) !important;
+        animation: dangerPulse 1s infinite !important;
+      }
+      
+      .timer-bar-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 8px;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      
+      .timer-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #6596ff 0%, #99bbff 50%, #6596ff 100%);
+        border-radius: 3px;
+        transition: width 0.3s ease-out, background 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 0 10px rgba(101,150,255,0.6);
+      }
+      
+      .timer-bar.danger {
+        animation: timerBarDanger 0.8s infinite;
+      }
+      
+      .objective-panel {
+        background: linear-gradient(135deg, rgba(20,20,40,0.95) 0%, rgba(10,10,20,0.95) 100%) !important;
+        border: 1px solid rgba(100,150,255,0.6) !important;
+        box-shadow: 
+          0 0 20px rgba(100,150,255,0.3),
+          inset 0 0 20px rgba(100,150,255,0.05),
+          0 4px 15px rgba(0,0,0,0.3) !important;
+      }
+      
+      .game-over-panel {
+        background: linear-gradient(135deg, rgba(40,0,0,0.95) 0%, rgba(20,0,0,0.95) 100%);
+        border: 2px solid #ff4444;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        color: #ff4444;
+        font-family: 'Orbitron', sans-serif;
+        box-shadow: 
+          0 0 30px rgba(255,68,68,0.6),
+          inset 0 0 30px rgba(255,68,68,0.1);
+        animation: pulse 2s infinite;
+        max-width: 90vw;
+        max-height: 90vh;
+        width: 450px;
+        backdrop-filter: blur(20px);
+        overflow-y: auto;
+      }
+    `;
+    document.head.appendChild(style);
   }
 
-  createPanel(id, html, positionStyles) {
+  createPanels() {
+    this.createStatusPanel();
+    this.createTimerPanel();
+    this.createObjectivePanel();
+    this.createAdvancedEnergyBar();
+  }
+
+  createStatusPanel() {
     const panel = document.createElement('div');
-    panel.id = `hud-${id}`;
+    panel.id = 'hud-status';
+    panel.className = 'hud-panel';
     panel.style.cssText = `
       position: absolute;
-      background: rgba(0, 0, 0, 0.6);
-      border: 2px solid #00ff88;
-      border-radius: 10px;
-      padding: 10px 14px;
-      box-shadow: 0 0 12px #00ff88;
-      color: #00ff88;
-      font-size: 14px;
-      text-shadow: 0 0 5px #00ff88;
-      pointer-events: none;
+      top: 15px;
+      left: 15px;
+      min-width: 140px;
+      font-weight: bold;
+      font-size: 16px;
     `;
-
-    if (id === 'timer') {
-      panel.style.width = '150px';
-      panel.style.textAlign = 'center';
-    }
-
-    Object.assign(panel.style, positionStyles);
-    panel.innerHTML = html;
+    panel.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: #00ff88; font-size: 18px;">🎯</span>
+        <span>RESCUED: <span id="score-value" style="color: #ffffff; font-size: 20px;">0</span></span>
+      </div>
+    `;
     this.container.appendChild(panel);
   }
 
-  createEnergyBar() {
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
+  createTimerPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'hud-timer';
+    panel.className = 'hud-panel timer-panel';
+    panel.style.cssText = `
       position: absolute;
-      bottom: 10px;
-      left: 10px;
-      width: 220px;
-      height: 30px;
-      background: rgba(0,0,0,0.6);
-      border: 2px solid #00ff88;
-      border-radius: 10px;
-      box-shadow: 0 0 8px #00ff88;
-      display: flex;
-      align-items: center;
-      font-size: 12px;
-      padding-left: 8px;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
     `;
+    panel.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span id="timer-icon" style="color: #6596ff; font-size: 18px;">⏱️</span>
+        <span>COLLAPSE: <span id="timer-value" style="color: #ffffff; font-size: 20px;">60s</span></span>
+      </div>
+    `;
+    this.container.appendChild(panel);
+  }
 
-    const labelContainer = document.createElement('div');
-    labelContainer.style.cssText = `
+  createObjectivePanel() {
+    const panel = document.createElement('div');
+    panel.id = 'hud-objective';
+    panel.className = 'hud-panel objective-panel';
+    panel.style.cssText = `
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      width: 300px;
+      font-size: 12px;
+      line-height: 1.4;
+    `;
+    panel.innerHTML = `
+      <div style="border-bottom: 1px solid rgba(100,150,255,0.3); padding-bottom: 8px; margin-bottom: 12px;">
+        <div style="font-size: 14px; font-weight: bold; color: #6596ff; display: flex; align-items: center; gap: 8px;">
+          <span>🎯</span> MISSION OBJECTIVE
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 10px;">
+        <div style="color: #ffffff; font-weight: bold;">Primary Goal:</div>
+        <div style="color: #cccccc; margin-left: 8px;">Rescue astronauts before time runs out</div>
+      </div>
+      
+      <div style="margin-bottom: 10px;">
+        <div style="color: #00ff88; font-weight: bold;">Reward:</div>
+        <div style="color: #cccccc; margin-left: 8px;">+3 seconds per rescue</div>
+      </div>
+      
+      <div style="border-top: 1px solid rgba(255,100,100,0.3); padding-top: 8px; margin-top: 12px;">
+        <div style="color: #ff6666; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+          <span>⚠️</span> HAZARDS
+        </div>
+        <div style="color: #cccccc; margin-left: 8px; font-size: 11px;">
+          Avoid asteroids and space storms
+        </div>
+      </div>
+    `;
+    this.container.appendChild(panel);
+  }
+
+  createAdvancedEnergyBar() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'energy-wrapper';
+
+    const headerSection = document.createElement('div');
+    headerSection.style.cssText = `
       display: flex;
       align-items: center;
-      margin-right: 8px;
-      min-width: 90px;
+      margin-right: 12px;
+      min-width: 110px;
     `;
 
     this.energyLabel = document.createElement('span');
-    this.energyLabel.textContent = '⚡ Energy Boost';
+    this.energyLabel.textContent = '⚡ Energy Ready';
     this.energyLabel.style.cssText = `
-      margin-right: 8px;
       color: #00ff88;
+      font-weight: bold;
+      font-size: 11px;
+      text-shadow: 0 0 8px rgba(0,255,136,0.8);
     `;
 
-    labelContainer.appendChild(this.energyLabel);
+    headerSection.appendChild(this.energyLabel);
 
-    const barContainer = document.createElement('div');
-    barContainer.style.cssText = `
+    const barSection = document.createElement('div');
+    barSection.style.cssText = `
       flex: 1;
-      height: 12px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 6px;
-      margin-right: 8px;
+      height: 20px;
+      position: relative;
+      margin-right: 10px;
+    `;
+
+    const barBackground = document.createElement('div');
+    barBackground.style.cssText = `
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
       overflow: hidden;
       position: relative;
     `;
@@ -125,109 +384,111 @@ export class GameHUD {
     this.energyBar.style.cssText = `
       height: 100%;
       width: 100%;
-      background: linear-gradient(to right, #ffff00, #ff8800);
-      border-radius: 6px;
-      transition: width 0.1s ease-out;
-      box-shadow: 0 0 4px rgba(255,255,0,0.5);
+      background: linear-gradient(90deg, #00ff88 0%, #44ff44 100%);
+      border-radius: 10px;
+      transition: width 0.3s ease-out, background 0.3s ease;
+      box-shadow: 
+        0 0 12px rgba(0,255,136,0.8),
+        inset 0 0 12px rgba(255,255,255,0.2);
+      position: relative;
+    `;
+
+    // Aggiungi effetto shimmer alla barra
+    const shimmer = document.createElement('div');
+    shimmer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: scanline 2s infinite;
+    `;
+    this.energyBar.appendChild(shimmer);
+
+    const percentageSection = document.createElement('div');
+    percentageSection.style.cssText = `
+      display: flex;
+      align-items: center;
+      min-width: 40px;
     `;
 
     this.energyPercentage = document.createElement('span');
     this.energyPercentage.style.cssText = `
-      font-size: 10px;
+      font-size: 11px;
       color: #00ff88;
-      min-width: 30px;
+      font-weight: bold;
       text-align: right;
+      text-shadow: 0 0 6px rgba(0,255,136,0.8);
     `;
 
-    barContainer.appendChild(this.energyBar);
-    wrapper.appendChild(labelContainer);
-    barContainer.appendChild(this.energyPercentage);
-    wrapper.appendChild(barContainer);
+    barBackground.appendChild(this.energyBar);
+    barSection.appendChild(barBackground);
+    percentageSection.appendChild(this.energyPercentage);
+
+    wrapper.appendChild(headerSection);
+    wrapper.appendChild(barSection);
+    wrapper.appendChild(percentageSection);
 
     this.container.appendChild(wrapper);
-  } 
+  }
 
   updateEnergyBar(boostTimeRemaining, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState) {
-        if (!this.energyBar || !this.energyPercentage || !this.energyLabel) return;
+    if (!this.energyBar || !this.energyPercentage || !this.energyLabel) return;
 
-        let percentage;
-        
-        if (isBoostActive) {
-            // Durante il boost: mostra quanto boost rimane
-            percentage = (boostTimeRemaining / boostDuration) * 100;
-        } else {
-            if (boostState === 'recharging') {
-                // Siamo in ricarica: mostra progresso basato su boostTimeRemaining
-                percentage = (boostTimeRemaining / boostDuration) * 100;
-            } else if (boostState === 'cooldown') {
-                // Compatibilità con il vecchio sistema (se ancora lo usi)
-                percentage = ((boostCooldown - boostTimer) / boostCooldown) * 100;
-            } else {
-                // Boost è pronto (state === 'ready')
-                percentage = (boostTimeRemaining / boostDuration) * 100;
-            }
-        }
-        
-        // Aggiorna la larghezza della barra
-        this.energyBar.style.width = `${percentage}%`;
-        
-        // Aggiorna il testo della percentuale
-        this.energyPercentage.textContent = `${Math.round(percentage)}%`;
-        
-        // Cambia colore e aspetto in base allo stato
-        if (isBoostActive) {
-            // Quando il boost è attivo
-            this.energyBar.style.background = 'linear-gradient(to right, #ff4444, #ff8800)';
-            this.energyBar.style.boxShadow = '0 0 6px rgba(255,68,68,0.8)';
-            this.energyLabel.style.color = '#ff4444';
-            this.energyLabel.textContent = '⚡ BOOST';
-        } else {
-            // Quando il boost non è attivo
-            if (percentage < 100) {
-                // In ricarica (sempre che non sia pieno)
-                this.energyBar.style.background = 'linear-gradient(to right, #ffff00, #ff8800)';
-                this.energyBar.style.boxShadow = '0 0 4px rgba(255,255,0,0.5)';
-                this.energyLabel.style.color = '#ffaa00';
-                this.energyLabel.textContent = '⚡ Charging...';
-            } else {
-                // Completamente carico
-                this.energyBar.style.background = 'linear-gradient(to right, #00ff88, #44ff44)';
-                this.energyBar.style.boxShadow = '0 0 6px rgba(0,255,136,0.8)';
-                this.energyLabel.style.color = '#00ff88';
-                this.energyLabel.textContent = '⚡ Energy Ready';
-            }
-        }
-        
-        // Effetto di pulsazione quando completamente carico
-        if (percentage >= 100 && !isBoostActive) {
-            this.energyBar.style.animation = 'pulse 2s infinite';
-            // Aggiungi il CSS per l'animazione se non presente
-            if (!document.querySelector('#energy-pulse-animation')) {
-                const style = document.createElement('style');
-                style.id = 'energy-pulse-animation';
-                style.textContent = `
-                    @keyframes pulse {
-                        0% { opacity: 1; }
-                        50% { opacity: 0.7; }
-                        100% { opacity: 1; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        } else {
-            this.energyBar.style.animation = 'none';
-        }
+    let percentage;
+    
+    if (isBoostActive) {
+      percentage = (boostTimeRemaining / boostDuration) * 100;
+    } else {
+      if (boostState === 'recharging') {
+        percentage = (boostTimeRemaining / boostDuration) * 100;
+      } else if (boostState === 'cooldown') {
+        percentage = ((boostCooldown - boostTimer) / boostCooldown) * 100;
+      } else {
+        percentage = (boostTimeRemaining / boostDuration) * 100;
+      }
     }
-      
+    
+    this.energyBar.style.width = `${percentage}%`;
+    this.energyPercentage.textContent = `${Math.round(percentage)}%`;
+    
+    if (isBoostActive) {
+      this.energyBar.style.background = 'linear-gradient(90deg, #ff4444 0%, #ff8800 100%)';
+      this.energyBar.style.boxShadow = '0 0 15px rgba(255,68,68,1), inset 0 0 15px rgba(255,255,255,0.3)';
+      this.energyLabel.style.color = '#ff4444';
+      this.energyLabel.textContent = '⚡ BOOST ACTIVE';
+      this.energyPercentage.style.color = '#ff4444';
+    } else {
+      if (percentage < 100) {
+        this.energyBar.style.background = 'linear-gradient(90deg, #ffaa00 0%, #ff8800 100%)';
+        this.energyBar.style.boxShadow = '0 0 12px rgba(255,170,0,0.8), inset 0 0 12px rgba(255,255,255,0.2)';
+        this.energyLabel.style.color = '#ffaa00';
+        this.energyLabel.textContent = '⚡ Charging...';
+        this.energyPercentage.style.color = '#ffaa00';
+      } else {
+        this.energyBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #44ff44 100%)';
+        this.energyBar.style.boxShadow = '0 0 15px rgba(0,255,136,1), inset 0 0 15px rgba(255,255,255,0.3)';
+        this.energyLabel.style.color = '#00ff88';
+        this.energyLabel.textContent = '⚡ Energy Ready';
+        this.energyPercentage.style.color = '#00ff88';
+      }
+    }
+    
+    if (percentage >= 100 && !isBoostActive) {
+      this.energyBar.style.animation = 'energyPulse 2s infinite';
+    } else {
+      this.energyBar.style.animation = 'none';
+    }
+  }
+
   showScorePopup(worldPosition, camera, renderer) {
-    // Converti la posizione 3D in coordinate dello schermo
     const vector = worldPosition.clone();
     vector.project(camera);
     
     const screenX = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
     const screenY = (vector.y * -0.5 + 0.5) * renderer.domElement.clientHeight;
     
-    // Crea l'elemento del popup
     const popup = document.createElement('div');
     popup.textContent = '+1';
     popup.style.cssText = `
@@ -241,17 +502,15 @@ export class GameHUD {
       pointer-events: none;
       z-index: 1000;
       transform: translate(-50%, -50%);
-      text-shadow: 0 0 10px #00ff88;
+      text-shadow: 0 0 15px #00ff88, 0 0 30px #00ff88;
     `;
     
-    // Aggiungi al container
     this.container.appendChild(popup);
     
-    // Animazione di fade out e movimento verso l'alto
     let opacity = 1;
     let yOffset = 0;
     const startTime = Date.now();
-    const duration = 2000; // 2 secondi
+    const duration = 2000;
     
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -266,7 +525,6 @@ export class GameHUD {
         
         requestAnimationFrame(animate);
       } else {
-        // Rimuovi l'elemento
         this.container.removeChild(popup);
       }
     };
@@ -274,169 +532,182 @@ export class GameHUD {
     animate();
   }
 
-  showGameOver(finalScore, elapsedTime) {
-    // Nasconde i pannelli del gioco
-    const panels = ['hud-status', 'hud-timer', 'hud-objective'];
-    panels.forEach(id => {
-      const panel = document.getElementById(id);
-      if (panel) panel.style.display = 'none';
-    });
-
-    // Nasconde la barra dell'energia
-    const energyWrapper = this.container.querySelector('div[style*="bottom: 10px"][style*="left: 10px"]');
-    if (energyWrapper) energyWrapper.style.display = 'none';
-
-    // Crea l'overlay di game over
-    const gameOverOverlay = document.createElement('div');
-    gameOverOverlay.id = 'game-over-overlay';
-    gameOverOverlay.style.cssText = `
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1001;
-      animation: fadeIn 0.5s ease-in;
-    `;
-
-    // Crea il pannello centrale di game over
-    const gameOverPanel = document.createElement('div');
-    gameOverPanel.style.cssText = `
-      background: rgba(0, 0, 0, 0.9);
-      border: 3px solid #ff4444;
-      border-radius: 20px;
-      padding: 40px;
-      text-align: center;
-      color: #ff4444;
-      font-family: 'Orbitron', sans-serif;
-      box-shadow: 0 0 30px #ff4444;
-      animation: pulse 2s infinite;
-      max-width: 500px;
-      min-width: 400px;
-    `;
-
-    // Converti il tempo in formato mm:ss
-    const minutes = Math.floor(elapsedTime / 60);
-    const seconds = Math.floor(elapsedTime % 60);
-    const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-    gameOverPanel.innerHTML = `
-      <div style="font-size: 48px; font-weight: bold; margin-bottom: 20px; animation: glow 2s infinite;">
-        GAME OVER
-      </div>
-      
-      <div style="font-size: 16px; margin-bottom: 30px; color: #ffffff;">
-        Mission Failed
-      </div>
-      
-      <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
-        <div style="font-size: 18px; margin-bottom: 15px; color: #00ff88;">
-          📊 MISSION STATS
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-          <span style="color: #ffffff;">Astronauts Rescued:</span>
-          <span style="color: #00ff88; font-weight: bold;">${finalScore}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-          <span style="color: #ffffff;">Time Survived:</span>
-          <span style="color: #00ff88; font-weight: bold;">${timeFormatted}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #ffffff;">Final Score:</span>
-          <span style="color: #00ff88; font-weight: bold; font-size: 20px;">${finalScore * 100}</span>
-        </div>
-      </div>
-      
-      <div style="font-size: 14px; color: #888888; margin-bottom: 20px;">
-        The solar storm has consumed the space station.<br>
-        Your heroic rescue mission will be remembered.
-      </div>
-      
-      <div style="font-size: 12px; color: #666666;">
-        Press F5 to restart mission
-      </div>
-    `;
-
-    gameOverOverlay.appendChild(gameOverPanel);
-    document.body.appendChild(gameOverOverlay);
-
-    // Aggiungi event listener per riavviare con F5
-    const handleRestart = (e) => {
-      if (e.key === 'F5' || e.keyCode === 116) {
-        location.reload();
-      }
-    };
-    
-    document.addEventListener('keydown', handleRestart);
-    
-    // Salva il riferimento per una eventuale pulizia
-    this.gameOverOverlay = gameOverOverlay;
-    this.restartHandler = handleRestart;
-  }
-
   showTimeBonus() {
     const bonus = document.createElement('div');
-    bonus.textContent = '+3 seconds';
+    bonus.textContent = '+3 SECONDS';
     bonus.style.cssText = `
       position: absolute;
-      top: 40px;
+      top: 60px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       color: #00ff88;
-      text-shadow: 0 0 8px #00ff88;
+      text-shadow: 0 0 15px #00ff88, 0 0 30px #00ff88;
       pointer-events: none;
       opacity: 1;
-      transition: opacity 1s ease, top 1s ease;
+      transition: opacity 1.5s ease, top 1.5s ease, transform 1.5s ease;
       z-index: 1000;
+      background: rgba(0,0,0,0.8);
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,255,136,0.6);
+      backdrop-filter: blur(10px);
     `;
 
     this.container.appendChild(bonus);
 
-    // Trigger animazione
     setTimeout(() => {
       bonus.style.opacity = '0';
-      bonus.style.top = '20px';
-    }, 50); // slight delay to ensure transition works
+      bonus.style.top = '30px';
+      bonus.style.transform = 'translateX(-50%) scale(1.2)';
+    }, 100);
 
-    // Rimuovi dopo l'animazione
     setTimeout(() => {
       this.container.removeChild(bonus);
-    }, 1050);
+    }, 1600);
   }
 
-  // --- Update Methods ---
+
+  showGameOver(finalScore, elapsedTime) {
+  const panels = ['hud-status', 'hud-timer', 'hud-objective'];
+  panels.forEach(id => {
+    const panel = document.getElementById(id);
+    if (panel) panel.style.display = 'none';
+  });
+
+  const energyWrapper = this.container.querySelector('.energy-wrapper');
+  if (energyWrapper) energyWrapper.style.display = 'none';
+
+  const gameOverOverlay = document.createElement('div');
+  gameOverOverlay.id = 'game-over-overlay';
+  gameOverOverlay.style.cssText = `
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at center, rgba(20,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+    animation: fadeIn 0.8s ease-in;
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    box-sizing: border-box;
+  `;
+
+  const gameOverPanel = document.createElement('div');
+  gameOverPanel.className = 'game-over-panel';
+  gameOverPanel.style.cssText = `
+    background: linear-gradient(135deg, rgba(40,0,0,0.95) 0%, rgba(20,0,0,0.95) 100%);
+    border: 2px solid #ff4444;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    color: #ff4444;
+    font-family: 'Orbitron', sans-serif;
+    box-shadow: 
+      0 0 30px rgba(255,68,68,0.6),
+      inset 0 0 30px rgba(255,68,68,0.1);
+    animation: pulse 2s infinite;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(20px);
+    overflow-y: auto;
+    box-sizing: border-box;
+  `;
+
+  const minutes = Math.floor(elapsedTime / 60);
+  const seconds = Math.floor(elapsedTime % 60);
+  const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  gameOverPanel.innerHTML = `
+    <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px; animation: glow 2s infinite; text-shadow: 0 0 20px #ff4444;">
+      MISSION FAILED
+    </div>
+    
+    <div style="font-size: 14px; margin-bottom: 20px; color: #ffffff; opacity: 0.8;">
+      The solar storm has consumed the station
+    </div>
+    
+    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
+      <div style="font-size: 16px; margin-bottom: 15px; color: #00ff88; font-weight: bold;">
+        📊 FINAL MISSION REPORT
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div style="text-align: left;">
+          <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Astronauts Rescued</div>
+          <div style="color: #00ff88; font-weight: bold; font-size: 20px;">${finalScore}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Time Survived</div>
+          <div style="color: #6596ff; font-weight: bold; font-size: 20px;">${timeFormatted}</div>
+        </div>
+      </div>
+      
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+        <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Final Score</div>
+        <div style="color: #ffffff; font-weight: bold; font-size: 24px; text-shadow: 0 0 15px #ffffff;">${finalScore * 100}</div>
+      </div>
+    </div>
+    
+    <div style="font-size: 12px; color: #999999; margin-bottom: 20px; line-height: 1.4;">
+      Your heroic rescue mission will be remembered.<br>
+      Every life saved was a victory against the void.
+    </div>
+    
+    <div style="font-size: 11px; color: #666666; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 6px;">
+      Press <span style="color: #00ff88; font-weight: bold;">F5</span> to restart mission
+    </div>
+  `;
+
+  gameOverOverlay.appendChild(gameOverPanel);
+  document.body.appendChild(gameOverOverlay);
+
+  const handleRestart = (e) => {
+    if (e.key === 'F5' || e.keyCode === 116) {
+      location.reload();
+    }
+  };
+  
+  document.addEventListener('keydown', handleRestart);
+  
+  this.gameOverOverlay = gameOverOverlay;
+  this.restartHandler = handleRestart;
+}
+
   updateStatus(score) {
-    const panel = document.getElementById('hud-status');
-    panel.innerHTML = `Score: ${score}`;
+    const scoreValue = document.getElementById('score-value');
+    if (scoreValue) {
+      scoreValue.textContent = score;
+    }
   }
 
   updateTimer(seconds) {
+    const timerValue = document.getElementById('timer-value');
     const panel = document.getElementById('hud-timer');
-
-    const isDanger = seconds <= 10;
-    const color = isDanger ? '#ff4444' : '#00ff88';
-
-    panel.innerHTML = `COLLAPSE: ${seconds}s`;
-    panel.style.color = color;
-    panel.style.textShadow = `0 0 5px ${color}`;
-    panel.style.borderColor = color;
-    panel.style.boxShadow = `0 0 12px ${color}`;
-
-    if (isDanger) {
-      panel.style.animation = 'pulseTimer 1s infinite';
-    } else {
-      panel.style.animation = 'none';
+    
+    if (timerValue && panel) {
+      timerValue.textContent = `${seconds}s`;
+      
+      const isDanger = seconds <= 10;
+      
+      if (isDanger) {
+        panel.style.animation = 'pulseTimer 1s infinite';
+        timerValue.style.color = '#ff4444';
+      } else {
+        panel.style.animation = 'none';
+        timerValue.style.color = '#ffffff';
+      }
     }
   }
 
   updateEnergy(percent) {
-    this.energyBar.style.width = `${percent}%`;
+    if (this.energyBar) {
+      this.energyBar.style.width = `${percent}%`;
+    }
   }
 }
