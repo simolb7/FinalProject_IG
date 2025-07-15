@@ -5,7 +5,7 @@ let isShipExploding = false;
 export class CollisionSystem {
      constructor() {
         this.collisionDistance = 20; // Distanza minima per collisione (aumentata)
-        this.asteroidCollisionDistance = 25;
+        this.asteroidCollisionDistance = 30;
     }
 
     // Calcola la distanza tra due oggetti 3D
@@ -420,7 +420,7 @@ class ParticleEmitter {
                 this.baseSize = 20;
                 this.lifeRange = [1.5, 3.0];
                 this.speedRange = [60, 120];
-                this.spreadRadius = 5;
+                this.spreadRadius = 2;
                 break;
                 
             case 'smoke':
@@ -431,7 +431,7 @@ class ParticleEmitter {
                 this.baseSize = 25;
                 this.lifeRange = [3.0, 6.0];
                 this.speedRange = [30, 70];
-                this.spreadRadius = 8;
+                this.spreadRadius = 3;
                 break;
                 
             case 'spark':
@@ -442,7 +442,7 @@ class ParticleEmitter {
                 this.baseSize = 3;
                 this.lifeRange = [0.5, 1.5];
                 this.speedRange = [150, 300];
-                this.spreadRadius = 2;
+                this.spreadRadius = 1;
                 break;
                 
             case 'debris':
@@ -450,10 +450,10 @@ class ParticleEmitter {
                 this.gravity = new THREE.Vector3(0, -150, 0);
                 this.drag = 0.97;
                 this.turbulenceStrength = 10;
-                this.baseSize = 8;
+                this.baseSize = 4;
                 this.lifeRange = [2.0, 4.0];
                 this.speedRange = [100, 200];
-                this.spreadRadius = 3;
+                this.spreadRadius = 1;
                 break;
         }
     }
