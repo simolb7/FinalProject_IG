@@ -93,21 +93,132 @@ export class GameHUD {
       padding-left: 8px;
     `;
 
-    wrapper.innerHTML = `<span style="margin-right: 8px;">⚡ Energy Boost</span>`;
+    const labelContainer = document.createElement('div');
+    labelContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      margin-right: 8px;
+      min-width: 90px;
+    `;
+
+    this.energyLabel = document.createElement('span');
+    this.energyLabel.textContent = '⚡ Energy Boost';
+    this.energyLabel.style.cssText = `
+      margin-right: 8px;
+      color: #00ff88;
+    `;
+
+    labelContainer.appendChild(this.energyLabel);
+
+    const barContainer = document.createElement('div');
+    barContainer.style.cssText = `
+      flex: 1;
+      height: 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      margin-right: 8px;
+      overflow: hidden;
+      position: relative;
+    `;
 
     this.energyBar = document.createElement('div');
     this.energyBar.style.cssText = `
-      height: 10px;
-      flex: 1;
-      background: linear-gradient(to right, yellow, orange);
-      border-radius: 4px;
-      margin-right: 8px;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(to right, #ffff00, #ff8800);
+      border-radius: 6px;
+      transition: width 0.1s ease-out;
+      box-shadow: 0 0 4px rgba(255,255,0,0.5);
     `;
 
-    wrapper.appendChild(this.energyBar);
-    this.container.appendChild(wrapper);
-  }
+    this.energyPercentage = document.createElement('span');
+    this.energyPercentage.style.cssText = `
+      font-size: 10px;
+      color: #00ff88;
+      min-width: 30px;
+      text-align: right;
+    `;
 
+    barContainer.appendChild(this.energyBar);
+    wrapper.appendChild(labelContainer);
+    barContainer.appendChild(this.energyPercentage);
+    wrapper.appendChild(barContainer);
+
+    this.container.appendChild(wrapper);
+  } 
+
+  updateEnergyBar(boostTimeRemaining, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState) {
+        if (!this.energyBar || !this.energyPercentage || !this.energyLabel) return;
+
+        let percentage;
+        
+        if (isBoostActive) {
+            // Durante il boost: mostra quanto boost rimane
+            percentage = (boostTimeRemaining / boostDuration) * 100;
+        } else {
+            if (boostState === 'recharging') {
+                // Siamo in ricarica: mostra progresso basato su boostTimeRemaining
+                percentage = (boostTimeRemaining / boostDuration) * 100;
+            } else if (boostState === 'cooldown') {
+                // Compatibilità con il vecchio sistema (se ancora lo usi)
+                percentage = ((boostCooldown - boostTimer) / boostCooldown) * 100;
+            } else {
+                // Boost è pronto (state === 'ready')
+                percentage = (boostTimeRemaining / boostDuration) * 100;
+            }
+        }
+        
+        // Aggiorna la larghezza della barra
+        this.energyBar.style.width = `${percentage}%`;
+        
+        // Aggiorna il testo della percentuale
+        this.energyPercentage.textContent = `${Math.round(percentage)}%`;
+        
+        // Cambia colore e aspetto in base allo stato
+        if (isBoostActive) {
+            // Quando il boost è attivo
+            this.energyBar.style.background = 'linear-gradient(to right, #ff4444, #ff8800)';
+            this.energyBar.style.boxShadow = '0 0 6px rgba(255,68,68,0.8)';
+            this.energyLabel.style.color = '#ff4444';
+            this.energyLabel.textContent = '⚡ BOOST';
+        } else {
+            // Quando il boost non è attivo
+            if (percentage < 100) {
+                // In ricarica (sempre che non sia pieno)
+                this.energyBar.style.background = 'linear-gradient(to right, #ffff00, #ff8800)';
+                this.energyBar.style.boxShadow = '0 0 4px rgba(255,255,0,0.5)';
+                this.energyLabel.style.color = '#ffaa00';
+                this.energyLabel.textContent = '⚡ Charging...';
+            } else {
+                // Completamente carico
+                this.energyBar.style.background = 'linear-gradient(to right, #00ff88, #44ff44)';
+                this.energyBar.style.boxShadow = '0 0 6px rgba(0,255,136,0.8)';
+                this.energyLabel.style.color = '#00ff88';
+                this.energyLabel.textContent = '⚡ Energy Ready';
+            }
+        }
+        
+        // Effetto di pulsazione quando completamente carico
+        if (percentage >= 100 && !isBoostActive) {
+            this.energyBar.style.animation = 'pulse 2s infinite';
+            // Aggiungi il CSS per l'animazione se non presente
+            if (!document.querySelector('#energy-pulse-animation')) {
+                const style = document.createElement('style');
+                style.id = 'energy-pulse-animation';
+                style.textContent = `
+                    @keyframes pulse {
+                        0% { opacity: 1; }
+                        50% { opacity: 0.7; }
+                        100% { opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        } else {
+            this.energyBar.style.animation = 'none';
+        }
+    }
+      
   showScorePopup(worldPosition, camera, renderer) {
     // Converti la posizione 3D in coordinate dello schermo
     const vector = worldPosition.clone();

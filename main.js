@@ -291,7 +291,10 @@ function animate(time) {
   if (thrusterL && thrusterR) {
    
     const velocity = shipController.getVelocity(); 
-    
+    const boostActive = shipController.GetIsBoostActive(); 
+  
+    thrusterL.setBoostMode(boostActive);
+    thrusterR.setBoostMode(boostActive);
     thrusterL.setDirection(velocity);
     thrusterR.setDirection(velocity);
     thrusterL.update(delta);
@@ -329,7 +332,14 @@ function animate(time) {
 
   //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
- 
+  const boostTimeRemaining = shipController.getBoostTimeRemaining();
+  const boostDuration = shipController.getBoostDuration();
+  const boostTimer = shipController.getBoostTimer();
+  const boostCooldown = shipController.getBoostCooldown();
+  const isBoostActive = shipController.GetIsBoostActive();
+  const boostState = shipController.getBoostState();
+
+  gameHUD.updateEnergyBar(boostTimeRemaining, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState);
 
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     

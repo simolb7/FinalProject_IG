@@ -12,6 +12,15 @@ export class ShipController {
     this.shipVelocity = new THREE.Vector3();
     this.shipSpeed = 0;
     this.prevPosition = new THREE.Vector3();
+
+    this.BOOST_MULTIPLIER = 3.0; // Moltiplicatore per il boost
+    this.isBoostActive = false;
+    this.boostState = 'ready'; 
+    this.boostDuration = 5.0; // Durata boost in secondi (era 5.0)
+    this.boostCooldown = 3.0; // Cooldown in secondi
+    this.boostTimer = 0;
+    this.boostTimeUsed = 0;
+    this.boostRechargeRate = 1.0; // Velocità di ricarica (secondi per secondo)
   }
 
   update(delta) {
@@ -19,6 +28,7 @@ export class ShipController {
 
     // Salva posizione precedente per calcolare velocità
     this.prevPosition.copy(this.ship.position);
+    this.handleBoost(delta);
 
     // === MOVIMENTO A VELOCITÀ COSTANTE ===
     // La navicella si muove sempre in avanti alla velocità costante
@@ -26,7 +36,8 @@ export class ShipController {
       .applyQuaternion(this.ship.quaternion)
       .normalize();
     
-    this.ship.position.addScaledVector(direction, this.CONSTANT_SPEED * this.speedMultiplier * delta);
+    const currentSpeed = this.CONSTANT_SPEED * (this.isBoostActive ? this.BOOST_MULTIPLIER : 1);
+    this.ship.position.addScaledVector(direction, currentSpeed * this.speedMultiplier * delta);
     // === CONTROLLI DIREZIONALI ===
     this.handleInput(delta);
 
@@ -82,6 +93,51 @@ export class ShipController {
     this.ship.rotation.z = THREE.MathUtils.lerp(currentRotZ, targetRot.z, 0.1);
   }
 
+  handleBoost(delta) {
+    const shiftPressed = this.keys['shift'] || this.keys['shiftleft'];
+    
+    switch (this.boostState) {
+      case 'ready':
+        if (shiftPressed && this.boostTimeUsed < this.boostDuration) {
+          this.boostState = 'active';
+          this.isBoostActive = true;
+        }
+        break;
+        
+      case 'active':
+        if (shiftPressed && this.boostTimeUsed < this.boostDuration) {
+          this.boostTimeUsed += delta;
+          this.isBoostActive = true;
+        } else {
+          // Quando rilasci il boost o finisce, vai in ricarica
+          this.boostState = 'recharging';
+          this.isBoostActive = false;
+        }
+        break;
+        
+      case 'recharging':
+        this.isBoostActive = false;
+        
+        // Ricarica il boost
+        if (this.boostTimeUsed > 0) {
+          this.boostTimeUsed -= this.boostRechargeRate * delta;
+          this.boostTimeUsed = Math.max(0, this.boostTimeUsed);
+        }
+        
+        // Se hai carica disponibile e premi shift, torna attivo
+        if (shiftPressed && this.boostTimeUsed < this.boostDuration) {
+          this.boostState = 'active';
+          this.isBoostActive = true;
+        }
+        
+        // Se è completamente ricaricato, torna ready
+        if (this.boostTimeUsed <= 0) {
+          this.boostState = 'ready';
+          this.boostTimeUsed = 0;
+        }
+        break;
+    }
+  }
   // Getter per accedere ai dati dall'esterno
   getPosition() {
     return this.ship ? this.ship.position : new THREE.Vector3();
@@ -98,9 +154,17 @@ export class ShipController {
   getSpeed() {
     return this.shipSpeed;
   }
+  
+  GetIsBoostActive() {
+    return this.isBoostActive;
+  }
 
   getConstantSpeed() {
     return this.CONSTANT_SPEED;
+  }
+
+  getBoostTimeRemaining() {
+    return Math.max(0, this.boostDuration - this.boostTimeUsed);
   }
 
   // Metodi per modificare i parametri durante il runtime
@@ -114,5 +178,29 @@ export class ShipController {
 
   setSpeedMultiplier(multiplier) {
     this.speedMultiplier = multiplier;
+  }
+
+  getBoostMultiplier() {
+    return this.BOOST_MULTIPLIER;
+  }
+
+  setBoostMultiplier(multiplier) {
+    this.BOOST_MULTIPLIER = multiplier;
+  }
+
+  getBoostState() {
+  return this.boostState;
+  }
+
+  getBoostTimer() {
+    return this.boostTimer;
+  }
+
+  getBoostDuration() {
+    return this.boostDuration;
+  }
+
+  getBoostCooldown() {
+    return this.boostCooldown;
   }
 }

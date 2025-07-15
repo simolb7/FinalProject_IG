@@ -16,7 +16,25 @@ export class Thruster {
     this.particleSystem = null;
     this.geometry = null;
     this.material = null;
+
+    this.isBoostActive = false;
+    this.boostMaxDistance = 8; // Fiamma più lunga durante il boost
+    this.boostBaseSpeed = 12; // Velocità maggiore durante il boost
+
+    this.originalBaseSpeed = this.baseSpeed;
+    this.originalMaxDistance = this.maxDistance;
+
+    this.boostRadius = this.thrusterRadius * 1.2; // Raggio maggiore durante il boost
+    this.originalRadius = this.thrusterRadius;
+
+    // Variabili per transizione smooth del raggio
+    this.currentRadius = this.thrusterRadius;
+    this.targetRadius = this.thrusterRadius;
+    this.radiusTransitionSpeed = 15.0; // Velocità di transizione del raggio
+
     
+    
+
     this.init();
   }
   
@@ -92,7 +110,7 @@ export class Thruster {
     
     // Posizione iniziale distribuita su tutta la superficie del propulsore
     const angle = Math.random() * Math.PI * 2;
-    const radius = Math.sqrt(Math.random()) * this.thrusterRadius; // Distribuzione uniforme nel cerchio
+    const radius = Math.sqrt(Math.random()) * this.currentRadius; // Distribuzione uniforme nel cerchio
     const zOffset = Math.random() * 0.1;
     
     positions[i3] = Math.cos(angle) * radius;
@@ -101,12 +119,12 @@ export class Thruster {
     
     // Velocità principalmente verso il basso con piccola dispersione
     const speed = this.baseSpeed + Math.random() * 3;
-    const dispersion = 0.1 + Math.random() * 0.2;
-    
+    const dispersion = this.isBoostActive ? 0.05 + Math.random() * 0.1 : 0.1 + Math.random() * 0.2;
+
     velocities[i3] = (Math.random() - 0.5) * dispersion * speed;
     velocities[i3 + 1] = (Math.random() - 0.5) * dispersion * speed;
     velocities[i3 + 2] = -speed;
-    
+        
     // Dimensione delle particelle per creare volume
     sizes[index] = 0.8 + Math.random() * 1.2;
     
@@ -121,6 +139,13 @@ export class Thruster {
   
   update(delta) {
     if (!this.particleSystem) return;
+
+    const radiusDiff = this.targetRadius - this.currentRadius;
+    if (Math.abs(radiusDiff) > 0.01) {
+      this.currentRadius += radiusDiff * this.radiusTransitionSpeed * delta;
+    } else {
+      this.currentRadius = this.targetRadius;
+    }
     
     const positions = this.geometry.attributes.position.array;
     const velocities = this.geometry.attributes.velocity.array;
@@ -141,42 +166,69 @@ export class Thruster {
       velocities[i3] += turbulence * delta;
       velocities[i3 + 1] += turbulence * delta;
       
-      // Calcola progresso basato sulla distanza
+      const currentMaxDistance = this.isBoostActive ? this.boostMaxDistance : this.maxDistance;
       const distance = Math.abs(positions[i3 + 2]);
-      const progress = Math.min(distance / this.maxDistance, 1.0);
-      
+      const progress = Math.min(distance / currentMaxDistance, 1.0);
+            
       // Aggiorna dimensione (aumenta leggermente con la distanza)
       sizes[i] = (0.8 + progress * 0.6) * (0.8 + Math.random() * 0.4);
       
       // Transizione colore: bianco-blu -> giallo -> arancione -> rosso
-      if (progress < 0.2) {
-        // Bianco-blu (centro caldissimo)
-        colors[i3] = 0.9 + Math.random() * 0.1;
-        colors[i3 + 1] = 0.9 + Math.random() * 0.1;
-        colors[i3 + 2] = 1.0;
-      } else if (progress < 0.4) {
-        // Giallo brillante
-        colors[i3] = 1.0;
-        colors[i3 + 1] = 1.0;
-        colors[i3 + 2] = 0.3 + Math.random() * 0.3;
-      } else if (progress < 0.7) {
-        // Arancione
-        colors[i3] = 1.0;
-        colors[i3 + 1] = 0.5 + Math.random() * 0.3;
-        colors[i3 + 2] = 0.1 + Math.random() * 0.2;
-      } else {
-        // Rosso scuro
-        colors[i3] = 0.8 + Math.random() * 0.2;
-        colors[i3 + 1] = 0.2 + Math.random() * 0.2;
-        colors[i3 + 2] = 0.1;
-      }
+      if (this.isBoostActive) {
+  // Modalità boost: colori più freddi e intensi (bianco-blu)
+          if (progress < 0.3) {
+            // Blu-bianco intenso invece di bianco puro
+            colors[i3] = 0.7 + Math.random() * 0.2;
+            colors[i3 + 1] = 0.8 + Math.random() * 0.2;
+            colors[i3 + 2] = 1.0;
+          } else if (progress < 0.6) {
+            // Blu-azzurro brillante
+            colors[i3] = 0.5 + Math.random() * 0.3;
+            colors[i3 + 1] = 0.7 + Math.random() * 0.2;
+            colors[i3 + 2] = 1.0;
+          } else {
+            // Blu intenso
+            colors[i3] = 0.3 + Math.random() * 0.2;
+            colors[i3 + 1] = 0.5 + Math.random() * 0.2;
+            colors[i3 + 2] = 1.0;
+          }
+        } else {
+          // Modalità normale: colori caldi (rosso-arancione-giallo)
+          if (progress < 0.2) {
+            // Bianco-blu (centro caldissimo)
+            colors[i3] = 0.9 + Math.random() * 0.1;
+            colors[i3 + 1] = 0.9 + Math.random() * 0.1;
+            colors[i3 + 2] = 1.0;
+          } else if (progress < 0.4) {
+            // Giallo brillante
+            colors[i3] = 1.0;
+            colors[i3 + 1] = 1.0;
+            colors[i3 + 2] = 0.3 + Math.random() * 0.3;
+          } else if (progress < 0.7) {
+            // Arancione
+            colors[i3] = 1.0;
+            colors[i3 + 1] = 0.5 + Math.random() * 0.3;
+            colors[i3 + 2] = 0.1 + Math.random() * 0.2;
+          } else {
+            // Rosso scuro
+            colors[i3] = 0.8 + Math.random() * 0.2;
+            colors[i3 + 1] = 0.2 + Math.random() * 0.2;
+            colors[i3 + 2] = 0.1;
+          }
+        }
       
       // Alpha che diminuisce con la distanza
       alphas[i] = (1.0 - progress * 0.9) * (0.6 + Math.random() * 0.4);
       
       // Reset particella se troppo lontana
-      if (distance > this.maxDistance) {
+      if (distance > currentMaxDistance) {
         this.resetParticle(i, positions, velocities, sizes, colors, alphas);
+      }
+
+      if (this.isBoostActive) {
+        const coneExpansion = (distance / currentMaxDistance) * 8.0; // Fattore di espansione
+        velocities[i3] += velocities[i3] * coneExpansion * delta * 2;
+        velocities[i3 + 1] += velocities[i3 + 1] * coneExpansion * delta * 2;
       }
     }
     
@@ -193,7 +245,7 @@ export class Thruster {
     
     // Reset posizione distribuita su tutta la superficie del propulsore
     const angle = Math.random() * Math.PI * 2;
-    const radius = Math.sqrt(Math.random()) * this.thrusterRadius;
+    const radius = Math.sqrt(Math.random()) * this.currentRadius;
     
     positions[i3] = Math.cos(angle) * radius;
     positions[i3 + 1] = Math.sin(angle) * radius;
@@ -201,13 +253,12 @@ export class Thruster {
     
     // Velocità principalmente verso il basso
     const speed = this.baseSpeed + Math.random() * 3;
-    const dispersion = 0.1 + Math.random() * 0.2;
-    
+    const dispersion = this.isBoostActive ? 0.05 + Math.random() * 0.1 : 0.1 + Math.random() * 0.2;
+
     velocities[i3] = (Math.random() - 0.5) * dispersion * speed;
     velocities[i3 + 1] = (Math.random() - 0.5) * dispersion * speed;
     velocities[i3 + 2] = -speed;
-    
-    // Dimensione iniziale
+        // Dimensione iniziale
     sizes[index] = 0.8 + Math.random() * 1.2;
     
     // Colore bianco-blu iniziale
@@ -222,8 +273,17 @@ export class Thruster {
   setDirection(direction) {
     // Applica rotazione al sistema di particelle basata sulla direzione
     if (this.particleSystem) {
-      this.particleSystem.rotation.x = direction.x * 0.15;
-      this.particleSystem.rotation.y = direction.y * 0.15;
+      // Usa lerp per smoothing delle rotazioni e riduce l'intensità
+      this.particleSystem.rotation.x = THREE.MathUtils.lerp(
+        this.particleSystem.rotation.x, 
+        direction.x * 0.01, 
+        0.1
+      );
+      this.particleSystem.rotation.y = THREE.MathUtils.lerp(
+        this.particleSystem.rotation.y, 
+        direction.y * 0.01, 
+        0.1
+      );
     }
   }
   
@@ -250,5 +310,21 @@ export class Thruster {
       this.geometry.dispose();
       this.material.dispose();
     }
+  }
+  setBoostMode(isBoostActive) {
+    this.isBoostActive = isBoostActive;
+    if (isBoostActive) {
+      this.maxDistance = this.boostMaxDistance;
+      this.baseSpeed = this.boostBaseSpeed;
+      this.targetRadius = this.boostRadius;
+      this.currentRadius = this.boostRadius; // Cambio istantaneo
+    } else {
+      this.maxDistance = this.originalMaxDistance;
+      this.baseSpeed = this.originalBaseSpeed;
+      this.targetRadius = this.originalRadius; // Ripristina il raggio originale
+    }
+  }
+  getBoostMode() {
+    return this.isBoostActive;
   }
 }
