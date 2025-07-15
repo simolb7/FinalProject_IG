@@ -464,86 +464,144 @@ class ParticleEmitter {
         }
     }
 
-    createParticle() {
+createParticle() {
         const life = this.lifeRange[0] + Math.random() * (this.lifeRange[1] - this.lifeRange[0]);
         
-        // Posizione casuale NON uniforme - più irregolare
+        // Posizione MOLTO irregolare - simula frammentazione realistica
         const randomMethod = Math.random();
         let p;
         
-        if (randomMethod < 0.4) {
-            // Distribuzione a grumi casuali
-            const clusterAngle = Math.random() * Math.PI * 2;
-            const clusterRadius = Math.random() * this.spreadRadius * 0.3;
-            const scatter = (Math.random() - 0.5) * this.spreadRadius * 0.8;
+        if (randomMethod < 0.2) {
+            // Distribuzione a "jet" - come se esplosioni interne creassero getti
+            const jetAngle = Math.random() * Math.PI * 2;
+            const jetLength = Math.pow(Math.random(), 0.3) * this.spreadRadius * 3; // Alcuni molto lontani
+            const jetWidth = Math.random() * this.spreadRadius * 0.2;
             
             p = new THREE.Vector3(
-                Math.cos(clusterAngle) * clusterRadius + scatter,
-                (Math.random() - 0.5) * this.spreadRadius * 0.5,
-                Math.sin(clusterAngle) * clusterRadius + scatter
+                Math.cos(jetAngle) * jetLength + (Math.random() - 0.5) * jetWidth,
+                (Math.random() - 0.5) * this.spreadRadius * 0.8,
+                Math.sin(jetAngle) * jetLength + (Math.random() - 0.5) * jetWidth
             );
-        } else if (randomMethod < 0.7) {
-            // Distribuzione più concentrata su un lato
-            const bias = Math.random() * 0.6 + 0.4; // Bias verso un lato
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.pow(Math.random(), 1.5) * this.spreadRadius * bias;
+        } else if (randomMethod < 0.4) {
+            // Distribuzione a "nuvola irregolare" - gruppi densi casuali
+            const cloudCenters = [
+                new THREE.Vector3(Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0, 0),
+                new THREE.Vector3(0, Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0),
+                new THREE.Vector3(0, 0, Math.random() * this.spreadRadius * 2 - this.spreadRadius)
+            ];
+            
+            const selectedCloud = cloudCenters[Math.floor(Math.random() * cloudCenters.length)];
+            const cloudRadius = Math.pow(Math.random(), 2) * this.spreadRadius * 0.8;
+            const cloudAngle = Math.random() * Math.PI * 2;
+            
+            p = selectedCloud.clone().add(new THREE.Vector3(
+                Math.cos(cloudAngle) * cloudRadius,
+                (Math.random() - 0.5) * this.spreadRadius * 0.6,
+                Math.sin(cloudAngle) * cloudRadius
+            ));
+        } else if (randomMethod < 0.6) {
+            // Distribuzione "a spirale frammentata" - come se rotasse durante l'esplosione
+            const spiralAngle = Math.random() * Math.PI * 4; // Più giri
+            const spiralRadius = Math.pow(Math.random(), 1.2) * this.spreadRadius * 1.5;
+            const spiralHeight = Math.sin(spiralAngle * 0.5) * this.spreadRadius * 0.7;
             
             p = new THREE.Vector3(
-                radius * Math.cos(angle) * (Math.random() > 0.5 ? 1 : -0.3),
-                (Math.random() - 0.5) * this.spreadRadius * 0.7,
-                radius * Math.sin(angle) * (Math.random() > 0.5 ? 1 : -0.3)
+                Math.cos(spiralAngle) * spiralRadius + (Math.random() - 0.5) * this.spreadRadius * 0.5,
+                spiralHeight + (Math.random() - 0.5) * this.spreadRadius * 0.4,
+                Math.sin(spiralAngle) * spiralRadius + (Math.random() - 0.5) * this.spreadRadius * 0.5
             );
         } else {
-            // Distribuzione lineare casuale (come frammenti che volano)
-            const direction = Math.random() * Math.PI * 2;
-            const distance = Math.random() * this.spreadRadius;
-            const height = (Math.random() - 0.5) * this.spreadRadius;
-            
-            p = new THREE.Vector3(
-                Math.cos(direction) * distance,
-                height,
-                Math.sin(direction) * distance
+            // Distribuzione "a frammenti volanti" - completamente caotica
+            const fragmentVector = new THREE.Vector3(
+                (Math.random() - 0.5) * this.spreadRadius * 4,
+                (Math.random() - 0.5) * this.spreadRadius * 3,
+                (Math.random() - 0.5) * this.spreadRadius * 4
             );
+            
+            // Applica distorsione non-lineare
+            fragmentVector.x *= Math.pow(Math.abs(fragmentVector.x / this.spreadRadius), 0.7);
+            fragmentVector.y *= Math.pow(Math.abs(fragmentVector.y / this.spreadRadius), 0.8);
+            fragmentVector.z *= Math.pow(Math.abs(fragmentVector.z / this.spreadRadius), 0.7);
+            
+            p = fragmentVector;
         }
         
         p.add(this.origin);
         
-        // Velocità NON radiale - più caotica
+        // Velocità MOLTO più caotica e realistica
         let direction;
         const velocityStyle = Math.random();
         
-        if (velocityStyle < 0.3) {
-            // Velocità completamente casuale
+        if (velocityStyle < 0.25) {
+            // Velocità "esplosiva" - completamente casuale ma con bias esplosivo
             direction = new THREE.Vector3(
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3
+            );
+            
+            // Aggiungi bias esplosivo verso l'esterno
+            const explosiveForce = p.clone().sub(this.origin).normalize().multiplyScalar(0.5);
+            direction.add(explosiveForce);
+            direction.normalize();
+        } else if (velocityStyle < 0.5) {
+            // Velocità "a vortice" - come se ci fossero correnti d'aria
+            const vortexAxis = new THREE.Vector3(0, 1, 0);
+            const positionFromCenter = p.clone().sub(this.origin);
+            const tangential = positionFromCenter.clone().cross(vortexAxis).normalize();
+            const outward = positionFromCenter.clone().normalize();
+            
+            direction = outward.multiplyScalar(0.6).add(tangential.multiplyScalar(0.4));
+            direction.add(new THREE.Vector3(
                 (Math.random() - 0.5) * 2,
                 (Math.random() - 0.5) * 2,
                 (Math.random() - 0.5) * 2
-            ).normalize();
-        } else if (velocityStyle < 0.6) {
-            // Velocità con bias verso l'alto ma casuale
-            direction = new THREE.Vector3(
-                (Math.random() - 0.5) * 1.5,
-                Math.random() * 0.8 + 0.2,
-                (Math.random() - 0.5) * 1.5
-            ).normalize();
-        } else {
-            // Velocità semi-radiale ma con molta variazione
-            direction = p.clone().sub(this.origin).normalize();
-            if (direction.length() === 0) {
-                direction.set(0, 1, 0);
-            }
+            ));
+            direction.normalize();
+        } else if (velocityStyle < 0.75) {
+            // Velocità "a onde d'urto" - multiple direzioni esplosive
+            const shockWaves = [
+                new THREE.Vector3(1, 0.3, 0.2),
+                new THREE.Vector3(-0.8, 0.5, 0.3),
+                new THREE.Vector3(0.2, -0.7, 1),
+                new THREE.Vector3(-0.3, 0.8, -0.6)
+            ];
             
-            // Aggiungi molta variazione alla direzione
+            const selectedWave = shockWaves[Math.floor(Math.random() * shockWaves.length)];
+            direction = selectedWave.clone().normalize();
+            
+            // Aggiungi variazione casuale molto forte
             direction.add(new THREE.Vector3(
-                (Math.random() - 0.5) * 1.2,
-                (Math.random() - 0.5) * 1.2,
-                (Math.random() - 0.5) * 1.2
+                (Math.random() - 0.5) * 1.8,
+                (Math.random() - 0.5) * 1.8,
+                (Math.random() - 0.5) * 1.8
+            ));
+            direction.normalize();
+        } else {
+            // Velocità "frammentazione" - come se pezzi volassero in direzioni specifiche
+            const fragmentDirections = [
+                new THREE.Vector3(1, 0, 0),
+                new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, -1, 0),
+                new THREE.Vector3(0, 0, 1),
+                new THREE.Vector3(0, 0, -1)
+            ];
+            
+            const baseDirection = fragmentDirections[Math.floor(Math.random() * fragmentDirections.length)];
+            
+            // Aggiungi MOLTA variazione alla direzione base
+            direction = baseDirection.clone().add(new THREE.Vector3(
+                (Math.random() - 0.5) * 2.5,
+                (Math.random() - 0.5) * 2.5,
+                (Math.random() - 0.5) * 2.5
             )).normalize();
         }
         
-        // Velocità molto più variabile
-        const speedVariation = Math.random() * 0.8 + 0.2; // 20% - 100% della velocità base
-        const speed = (this.speedRange[0] + Math.random() * (this.speedRange[1] - this.speedRange[0])) * speedVariation;
+        // Velocità MOLTO più variabile e realistica
+        const speedVariation = Math.pow(Math.random(), 0.6); // Distribuzione non-lineare
+        const speedMultiplier = 0.1 + speedVariation * 2.0; // Da 10% a 210% della velocità base
+        const speed = (this.speedRange[0] + Math.random() * (this.speedRange[1] - this.speedRange[0])) * speedMultiplier;
         direction.multiplyScalar(speed);
 
         // Crea sprite
@@ -687,7 +745,7 @@ class ShipExplosionSystem {
         emitter.sizeSpline.addPoint(1.0, 0.5 * shipSize, 'ease-in');
         
         emitter.baseSize *= shipSize;
-        emitter.spreadRadius *= shipSize * 1.5; // Spread maggiore per più caos
+        emitter.spreadRadius *= shipSize * 0.5; // Spread maggiore per più caos
         emitter.turbulenceStrength *= 1.5; // Più turbolenza
         emitter.addParticles(200); // Meno particelle ma più caotiche
         
