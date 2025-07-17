@@ -33,6 +33,9 @@ const dropRates = [0.4, 0.4, 0.2]; // somma = 1.0
 const playerDirection = new THREE.Vector3(); 
 let asteroidModels = []; // array globale per tenere i modelli caricati
 
+
+let isRestarting = false;
+
 const collisionSystem = new CollisionSystem();
 
 let score = 0;
@@ -74,22 +77,37 @@ async function init() {
   // CREA L'HUD MA NON MOSTRARLO
   gameHUD = new GameHUD();
   window.gameHUD = gameHUD;
-  // NON chiamare gameHUD.show() qui!
 
+  timer = new GameTimer(62);
   // Event listeners
   setupEventListeners();
 
   console.log('Inizializzazione completata');
 
-  // Crea e mostra la schermata di start
-  startScreen = new StartScreen();
-  startScreen.show(startGame);
+    if (checkIfRestart()) {
+    // Se è un restart, salta lo start menu e inizia direttamente
+    startGame();
+  } else {
+    // Altrimenti mostra lo start menu normalmente
+    startScreen = new StartScreen();
+    startScreen.show(startGame);
+  }
   
   gameInitialized = true;
 
-  // Crea il timer ma non avviarlo
-  timer = new GameTimer(62);
-  // NON chiamare timer.start() qui!
+}
+
+function checkIfRestart() {
+  // Controlla se c'è un flag nel sessionStorage
+  const isRestart = sessionStorage.getItem('gameRestart') === 'true';
+  
+  if (isRestart) {
+    // Rimuovi il flag dopo averlo letto
+    sessionStorage.removeItem('gameRestart');
+    return true;
+  }
+  
+  return false;
 }
 
 function startGame() {
@@ -258,6 +276,15 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function restartGame() {
+  console.log('Riavvio del gioco...');
+  
+  // Imposta il flag di restart
+  sessionStorage.setItem('gameRestart', 'true');
+  
+  // Ricarica la pagina
+  location.reload();
+}
 
 function endGame() {
     if (gameOver) return;
@@ -272,8 +299,11 @@ function endGame() {
     
     const elapsedTime = timer.startTime ? (performance.now() - timer.startTime) / 1000 : 0;
     console.log('Calculated elapsed time:', elapsedTime-1);
-    gameHUD.showGameOver(score, elapsedTime-1);
     
+    // Passa la funzione restart al gameHUD
+    gameHUD.showGameOver(score, elapsedTime-1, restartGame);
+    
+    // Rimuovi i vecchi event listeners
     window.removeEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
     window.removeEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 }
@@ -284,6 +314,7 @@ function hideGameHUD() {
   }
 }
 
+// Aggiungi queste funzioni al tuo file main
 
 
 function animate(time) {

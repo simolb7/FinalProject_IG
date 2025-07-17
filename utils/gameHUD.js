@@ -1,5 +1,13 @@
+
+function restartGame() {
+    console.log('Riavvio del gioco...');
+    sessionStorage.setItem('gameRestart', 'true');
+    location.reload();
+}
+
+
 export class GameHUD {
-  constructor() {
+  constructor(restartCallback) {
     this.container = document.createElement('div');
     this.container.id = 'game-hud';
     this.container.style.cssText = `
@@ -16,6 +24,7 @@ export class GameHUD {
     document.body.appendChild(this.container);
     this.createPanels();
     this.hide();
+    this.restartCallback = restartCallback;
   }
 
   createAdvancedStyles() {
@@ -581,6 +590,7 @@ export class GameHUD {
     }, 1600);
   }
 
+  
 
   showGameOver(finalScore, elapsedTime) {
     const panels = ['hud-status', 'hud-timer', 'hud-objective'];
@@ -674,7 +684,7 @@ export class GameHUD {
       </div>
       
       <div style="font-size: 15px; color: #666666; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;">
-        Press <span style="color: #00ff88; font-weight: bold;">F5</span> to restart mission
+        Press <span style="color: #00ff88; font-weight: bold;">SPACE</span> to restart mission
       </div>
     `;
 
@@ -682,15 +692,29 @@ export class GameHUD {
     document.body.appendChild(gameOverOverlay);
 
     const handleRestart = (e) => {
-      if (e.key === 'F5' || e.keyCode === 116) {
-        location.reload();
-      }
+        if (e.code === 'Space') { // Usa 'Space' per la barra spaziatrice
+            e.preventDefault(); // Previene lo scroll della pagina
+            restartGame(); 
+        }
     };
-    
-    document.addEventListener('keydown', handleRestart);
+        document.addEventListener('keydown', handleRestart);
     
     this.gameOverOverlay = gameOverOverlay;
     this.restartHandler = handleRestart;
+  }
+
+
+
+  hideGameOver() {
+    if (this.gameOverOverlay) {
+        document.body.removeChild(this.gameOverOverlay);
+        this.gameOverOverlay = null;
+    }
+    
+    if (this.restartHandler) {
+        document.removeEventListener('keydown', this.restartHandler);
+        this.restartHandler = null;
+    }
   }
 
   updateStatus(score) {
