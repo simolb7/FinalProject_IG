@@ -59,8 +59,8 @@ export function createReferenceObjects(scene) {
 
 export function updateAsteroidField(playerPosition, playerDirection, scene, models, dropRates) {
   //before 2200, 300
-  const spawnRadius = 3000;
-  const maxAsteroids = 600;
+  const spawnRadius = 2200;
+  const maxAsteroids = 300;
 
   activeAsteroids = activeAsteroids.filter(entry => {
     const relativePos = entry.mesh.position.clone().sub(playerPosition);
