@@ -11,11 +11,16 @@ import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
 import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids} from './utils/sceneObjects.js';
 import { CollisionSystem, createShipExplosion, updateExplosions, destroyExplosionSystem, setExplosionGameEnded } from './utils/CollisionSystem.js';
+import { StartScreen } from './utils/startScreen.js';
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
 let thrusterL, thrusterR;
 let mainLight, fillLight, keyLight, ambientLight;
+
+let startScreen;
+let gameState = 'START'; // 'START', 'PLAYING', 'GAME_OVER'
+let gameInitialized = false;
 
 const keys = {};
 let gameOver = false;
@@ -62,29 +67,41 @@ async function init() {
             spawnRate: 0.15
         });
 
-  //await spawnAstronaut();
-  //await spawnRandomModels();
-  
-  //await loadAstronautModels();
-
-  // Aggiungi oggetti di riferimento
-  //createReferenceObjects(scene);
   stormManager = new SolarStormManager(scene, ship);
-
-  // Setup controllers
   shipController = new ShipController(ship, keys);
   cameraController = new CameraController(camera, ship);
-  //debugHUD = new DebugHUD();
+
+  // CREA L'HUD MA NON MOSTRARLO
   gameHUD = new GameHUD();
+  window.gameHUD = gameHUD;
+  // NON chiamare gameHUD.show() qui!
 
   // Event listeners
   setupEventListeners();
 
   console.log('Inizializzazione completata');
+
+  // Crea e mostra la schermata di start
+  startScreen = new StartScreen();
+  startScreen.show(startGame);
+  
+  gameInitialized = true;
+
+  // Crea il timer ma non avviarlo
   timer = new GameTimer(62);
-  timer.start();
+  // NON chiamare timer.start() qui!
 }
 
+function startGame() {
+  console.log('Avvio del gioco!');
+  gameState = 'PLAYING';
+  
+  // Avvia il timer solo quando il gioco inizia
+  timer.start();
+  
+  // Mostra l'HUD del gioco SOLO quando il gioco inizia
+  gameHUD.show();
+}
 
 async function spawnRandomModels() {
     try {
@@ -243,32 +260,55 @@ function onWindowResize() {
 
 
 function endGame() {
-    // Evita chiamate multiple
     if (gameOver) return;
     
     console.log('Game Over!');
     gameOver = true;
+    gameState = 'GAME_OVER';
     
-    // Ferma il timer
     if (timer) {
         timer.stop();
     }
     
-    // Mostra schermata finale
     const elapsedTime = timer.startTime ? (performance.now() - timer.startTime) / 1000 : 0;
     console.log('Calculated elapsed time:', elapsedTime-1);
     gameHUD.showGameOver(score, elapsedTime-1);
     
-    // Opzionale: rimuovi event listeners per impedire movimento
     window.removeEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
     window.removeEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 }
 
+function hideGameHUD() {
+  if (gameHUD && gameHUD.hide) {
+    gameHUD.hide();
+  }
+}
+
+
+
 function animate(time) {
   requestAnimationFrame(animate);
+  if (!gameInitialized) return;
 
+
+  if (gameState === 'START') {
+    // Durante lo start, renderizza solo la scena 3D di base
+    if (ship && starfield) {
+      // Aggiorna starfield
+      starfield.position.copy(camera.position);
+      starfield.rotation.y += 0.0001;
+      
+      // Aggiorna illuminazione di base
+      updateDynamicLighting();
+      
+      // Renderizza la scena
+      renderer.render(scene, camera);
+    }
+    return;
+  }
   if (!ship) return;
   if (gameOver) return;
+  if (gameState !== 'PLAYING') return;
 
   const delta = (time - (animate.prevTime || time)) / 1400;
   animate.prevTime = time;
@@ -333,13 +373,14 @@ function animate(time) {
   //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
   const boostTimeRemaining = shipController.getBoostTimeRemaining();
+  const boostTimeUsed = shipController.GetBoostTimeUsed();
   const boostDuration = shipController.getBoostDuration();
   const boostTimer = shipController.getBoostTimer();
   const boostCooldown = shipController.getBoostCooldown();
   const isBoostActive = shipController.GetIsBoostActive();
   const boostState = shipController.getBoostState();
 
-  gameHUD.updateEnergyBar(boostTimeRemaining, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState);
+  gameHUD.updateEnergyBar(boostTimeUsed, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState);
 
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     

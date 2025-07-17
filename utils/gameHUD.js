@@ -15,6 +15,7 @@ export class GameHUD {
     this.createAdvancedStyles();
     document.body.appendChild(this.container);
     this.createPanels();
+    this.hide();
   }
 
   createAdvancedStyles() {
@@ -103,15 +104,15 @@ export class GameHUD {
         position: relative;
         background: linear-gradient(135deg, rgba(0,20,40,0.95) 0%, rgba(0,10,20,0.95) 100%);
         border: 1px solid rgba(0,255,136,0.6);
-        border-radius: 8px;
-        padding: 12px 16px;
+        border-radius: 10px;
+        padding: 16px 20px;
         backdrop-filter: blur(10px);
         box-shadow: 
           0 0 20px rgba(0,255,136,0.3),
           inset 0 0 20px rgba(0,255,136,0.05),
           0 4px 15px rgba(0,0,0,0.3);
         color: #00ff88;
-        font-size: 14px;
+        font-size: 16px;
         text-shadow: 0 0 8px rgba(0,255,136,0.8);
         pointer-events: none;
         overflow: hidden;
@@ -142,13 +143,13 @@ export class GameHUD {
       
       .energy-wrapper {
         position: absolute;
-        bottom: 15px;
-        left: 15px;
-        width: 280px;
-        height: 50px;
+        bottom: 20px;
+        left: 20px;
+        width: 320px;
+        height: 60px;
         background: linear-gradient(135deg, rgba(0,30,60,0.95) 0%, rgba(0,15,30,0.95) 100%);
         border: 1px solid rgba(0,255,136,0.6);
-        border-radius: 12px;
+        border-radius: 15px;
         backdrop-filter: blur(15px);
         box-shadow: 
           0 0 25px rgba(0,255,136,0.4),
@@ -156,8 +157,8 @@ export class GameHUD {
           0 6px 20px rgba(0,0,0,0.4);
         display: flex;
         align-items: center;
-        font-size: 12px;
-        padding: 0 15px;
+        font-size: 14px;
+        padding: 0 20px;
         animation: fadeIn 1s ease-out;
         overflow: hidden;
       }
@@ -180,7 +181,7 @@ export class GameHUD {
           0 0 20px rgba(100,150,255,0.3),
           inset 0 0 20px rgba(100,150,255,0.05),
           0 4px 15px rgba(0,0,0,0.3) !important;
-        width: 280px !important;
+        width: 320px !important;
         transition: all 0.3s ease;
       }
       
@@ -196,18 +197,18 @@ export class GameHUD {
       
       .timer-bar-container {
         width: 100%;
-        height: 6px;
+        height: 8px;
         background: rgba(0,0,0,0.5);
-        border-radius: 3px;
+        border-radius: 4px;
         overflow: hidden;
-        margin-top: 8px;
+        margin-top: 10px;
         border: 1px solid rgba(255,255,255,0.2);
       }
       
       .timer-bar {
         height: 100%;
         background: linear-gradient(90deg, #6596ff 0%, #99bbff 50%, #6596ff 100%);
-        border-radius: 3px;
+        border-radius: 4px;
         transition: width 0.3s ease-out, background 0.3s ease, box-shadow 0.3s ease;
         box-shadow: 0 0 10px rgba(101,150,255,0.6);
       }
@@ -229,7 +230,7 @@ export class GameHUD {
         background: linear-gradient(135deg, rgba(40,0,0,0.95) 0%, rgba(20,0,0,0.95) 100%);
         border: 2px solid #ff4444;
         border-radius: 15px;
-        padding: 25px;
+        padding: 30px;
         text-align: center;
         color: #ff4444;
         font-family: 'Orbitron', sans-serif;
@@ -239,7 +240,7 @@ export class GameHUD {
         animation: pulse 2s infinite;
         max-width: 90vw;
         max-height: 90vh;
-        width: 450px;
+        width: 480px;
         backdrop-filter: blur(20px);
         overflow-y: auto;
       }
@@ -260,16 +261,16 @@ export class GameHUD {
     panel.className = 'hud-panel';
     panel.style.cssText = `
       position: absolute;
-      top: 15px;
-      left: 15px;
-      min-width: 140px;
+      top: 20px;
+      left: 20px;
+      min-width: 160px;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 18px;
     `;
     panel.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="color: #00ff88; font-size: 18px;">🎯</span>
-        <span>RESCUED: <span id="score-value" style="color: #ffffff; font-size: 20px;">0</span></span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="color: #00ff88; font-size: 22px;">🎯</span>
+        <span>RESCUED: <span id="score-value" style="color: #ffffff; font-size: 24px;">0</span></span>
       </div>
     `;
     this.container.appendChild(panel);
@@ -281,17 +282,17 @@ export class GameHUD {
     panel.className = 'hud-panel timer-panel';
     panel.style.cssText = `
       position: absolute;
-      top: 15px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 18px;
     `;
     panel.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <span id="timer-icon" style="color: #6596ff; font-size: 18px;">⏱️</span>
-        <span>COLLAPSE: <span id="timer-value" style="color: #ffffff; font-size: 20px;">60s</span></span>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span id="timer-icon" style="color: #6596ff; font-size: 22px;">⏱️</span>
+        <span>COLLAPSE: <span id="timer-value" style="color: #ffffff; font-size: 24px;">60s</span></span>
       </div>
     `;
     this.container.appendChild(panel);
@@ -303,34 +304,34 @@ export class GameHUD {
     panel.className = 'hud-panel objective-panel';
     panel.style.cssText = `
       position: absolute;
-      bottom: 15px;
-      right: 15px;
-      width: 300px;
-      font-size: 12px;
-      line-height: 1.4;
+      bottom: 20px;
+      right: 20px;
+      width: 340px;
+      font-size: 14px;
+      line-height: 1.5;
     `;
     panel.innerHTML = `
-      <div style="border-bottom: 1px solid rgba(100,150,255,0.3); padding-bottom: 8px; margin-bottom: 12px;">
-        <div style="font-size: 14px; font-weight: bold; color: #6596ff; display: flex; align-items: center; gap: 8px;">
+      <div style="border-bottom: 1px solid rgba(100,150,255,0.3); padding-bottom: 10px; margin-bottom: 15px;">
+        <div style="font-size: 16px; font-weight: bold; color: #6596ff; display: flex; align-items: center; gap: 10px;">
           <span>🎯</span> MISSION OBJECTIVE
         </div>
       </div>
       
-      <div style="margin-bottom: 10px;">
-        <div style="color: #ffffff; font-weight: bold;">Primary Goal:</div>
-        <div style="color: #cccccc; margin-left: 8px;">Rescue astronauts before time runs out</div>
+      <div style="margin-bottom: 12px;">
+        <div style="color: #ffffff; font-weight: bold; font-size: 15px;">Primary Goal:</div>
+        <div style="color: #cccccc; margin-left: 10px;">Rescue as many astronauts as you can before time runs out!</div>
       </div>
       
-      <div style="margin-bottom: 10px;">
-        <div style="color: #00ff88; font-weight: bold;">Reward:</div>
-        <div style="color: #cccccc; margin-left: 8px;">+3 seconds per rescue</div>
+      <div style="margin-bottom: 12px;">
+        <div style="color: #00ff88; font-weight: bold; font-size: 15px;">Reward:</div>
+        <div style="color: #cccccc; margin-left: 10px;">+3 seconds per rescue</div>
       </div>
       
-      <div style="border-top: 1px solid rgba(255,100,100,0.3); padding-top: 8px; margin-top: 12px;">
-        <div style="color: #ff6666; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+      <div style="border-top: 1px solid rgba(255,100,100,0.3); padding-top: 10px; margin-top: 15px;">
+        <div style="color: #ff6666; font-weight: bold; display: flex; align-items: center; gap: 8px; font-size: 15px;">
           <span>⚠️</span> HAZARDS
         </div>
-        <div style="color: #cccccc; margin-left: 8px; font-size: 11px;">
+        <div style="color: #cccccc; margin-left: 10px; font-size: 13px;">
           Avoid asteroids and space storms
         </div>
       </div>
@@ -346,8 +347,8 @@ export class GameHUD {
     headerSection.style.cssText = `
       display: flex;
       align-items: center;
-      margin-right: 12px;
-      min-width: 110px;
+      margin-right: 15px;
+      min-width: 120px;
     `;
 
     this.energyLabel = document.createElement('span');
@@ -355,7 +356,7 @@ export class GameHUD {
     this.energyLabel.style.cssText = `
       color: #00ff88;
       font-weight: bold;
-      font-size: 11px;
+      font-size: 13px;
       text-shadow: 0 0 8px rgba(0,255,136,0.8);
     `;
 
@@ -364,9 +365,9 @@ export class GameHUD {
     const barSection = document.createElement('div');
     barSection.style.cssText = `
       flex: 1;
-      height: 20px;
+      height: 24px;
       position: relative;
-      margin-right: 10px;
+      margin-right: 12px;
     `;
 
     const barBackground = document.createElement('div');
@@ -374,7 +375,7 @@ export class GameHUD {
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.4);
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.2);
       overflow: hidden;
       position: relative;
@@ -385,7 +386,7 @@ export class GameHUD {
       height: 100%;
       width: 100%;
       background: linear-gradient(90deg, #00ff88 0%, #44ff44 100%);
-      border-radius: 10px;
+      border-radius: 12px;
       transition: width 0.3s ease-out, background 0.3s ease;
       box-shadow: 
         0 0 12px rgba(0,255,136,0.8),
@@ -410,12 +411,12 @@ export class GameHUD {
     percentageSection.style.cssText = `
       display: flex;
       align-items: center;
-      min-width: 40px;
+      min-width: 45px;
     `;
 
     this.energyPercentage = document.createElement('span');
     this.energyPercentage.style.cssText = `
-      font-size: 11px;
+      font-size: 13px;
       color: #00ff88;
       font-weight: bold;
       text-align: right;
@@ -433,25 +434,36 @@ export class GameHUD {
     this.container.appendChild(wrapper);
   }
 
-  updateEnergyBar(boostTimeRemaining, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState) {
+  updateEnergyBar(boostTimeUsed, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState) {
     if (!this.energyBar || !this.energyPercentage || !this.energyLabel) return;
 
     let percentage;
     
     if (isBoostActive) {
-      percentage = (boostTimeRemaining / boostDuration) * 100;
+      // Durante il boost, mostra quanto tempo rimane
+      percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
     } else {
       if (boostState === 'recharging') {
-        percentage = (boostTimeRemaining / boostDuration) * 100;
-      } else if (boostState === 'cooldown') {
-        percentage = ((boostCooldown - boostTimer) / boostCooldown) * 100;
+        // Durante la ricarica, mostra quanto è stato ricaricato
+        percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
+      } else if (boostState === 'ready') {
+        // Quando è pronto, è al 100%
+        percentage = 100;
       } else {
-        percentage = (boostTimeRemaining / boostDuration) * 100;
+        // Fallback
+        percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
       }
     }
+
+    percentage = Math.round(((boostDuration - boostTimeUsed) / boostDuration) * 100);
     
     this.energyBar.style.width = `${percentage}%`;
     this.energyPercentage.textContent = `${Math.round(percentage)}%`;
+
+    console.log({ boostTimeUsed, boostDuration, percentage, isBoostActive, boostState, percentage});
+
+    // Rimuovi sempre l'animazione prima di applicare nuovi stili
+    this.energyBar.style.animation = 'none';
     
     if (isBoostActive) {
       this.energyBar.style.background = 'linear-gradient(90deg, #ff4444 0%, #ff8800 100%)';
@@ -467,18 +479,19 @@ export class GameHUD {
         this.energyLabel.textContent = '⚡ Charging...';
         this.energyPercentage.style.color = '#ffaa00';
       } else {
+        console.log('Energy is ready');
         this.energyBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #44ff44 100%)';
         this.energyBar.style.boxShadow = '0 0 15px rgba(0,255,136,1), inset 0 0 15px rgba(255,255,255,0.3)';
         this.energyLabel.style.color = '#00ff88';
         this.energyLabel.textContent = '⚡ Energy Ready';
         this.energyPercentage.style.color = '#00ff88';
+        
+        // Applica l'animazione DOPO aver impostato i colori
+        // Usa un piccolo delay per assicurarti che i colori siano applicati
+        setTimeout(() => {
+          this.energyBar.style.animation = 'energyPulse 2s infinite';
+        }, 10);
       }
-    }
-    
-    if (percentage >= 100 && !isBoostActive) {
-      this.energyBar.style.animation = 'energyPulse 2s infinite';
-    } else {
-      this.energyBar.style.animation = 'none';
     }
   }
 
@@ -497,7 +510,7 @@ export class GameHUD {
       top: ${screenY}px;
       font-family: 'Orbitron', sans-serif;
       color: #00ff88;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
       pointer-events: none;
       z-index: 1000;
@@ -537,10 +550,10 @@ export class GameHUD {
     bonus.textContent = '+3 SECONDS';
     bonus.style.cssText = `
       position: absolute;
-      top: 60px;
+      top: 70px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 20px;
+      font-size: 24px;
       font-weight: bold;
       color: #00ff88;
       text-shadow: 0 0 15px #00ff88, 0 0 30px #00ff88;
@@ -549,8 +562,8 @@ export class GameHUD {
       transition: opacity 1.5s ease, top 1.5s ease, transform 1.5s ease;
       z-index: 1000;
       background: rgba(0,0,0,0.8);
-      padding: 8px 16px;
-      border-radius: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
       border: 1px solid rgba(0,255,136,0.6);
       backdrop-filter: blur(10px);
     `;
@@ -559,7 +572,7 @@ export class GameHUD {
 
     setTimeout(() => {
       bonus.style.opacity = '0';
-      bonus.style.top = '30px';
+      bonus.style.top = '40px';
       bonus.style.transform = 'translateX(-50%) scale(1.2)';
     }, 100);
 
@@ -570,114 +583,115 @@ export class GameHUD {
 
 
   showGameOver(finalScore, elapsedTime) {
-  const panels = ['hud-status', 'hud-timer', 'hud-objective'];
-  panels.forEach(id => {
-    const panel = document.getElementById(id);
-    if (panel) panel.style.display = 'none';
-  });
+    const panels = ['hud-status', 'hud-timer', 'hud-objective'];
+    panels.forEach(id => {
+      const panel = document.getElementById(id);
+      if (panel) panel.style.display = 'none';
+    });
 
-  const energyWrapper = this.container.querySelector('.energy-wrapper');
-  if (energyWrapper) energyWrapper.style.display = 'none';
+    const energyWrapper = this.container.querySelector('.energy-wrapper');
+    if (energyWrapper) energyWrapper.style.display = 'none';
 
-  const gameOverOverlay = document.createElement('div');
-  gameOverOverlay.id = 'game-over-overlay';
-  gameOverOverlay.style.cssText = `
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: radial-gradient(circle at center, rgba(20,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1001;
-    animation: fadeIn 0.8s ease-in;
-    backdrop-filter: blur(5px);
-    padding: 20px;
-    box-sizing: border-box;
-  `;
+    const gameOverOverlay = document.createElement('div');
+    gameOverOverlay.id = 'game-over-overlay';
+    gameOverOverlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at center, rgba(20,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+      animation: fadeIn 0.8s ease-in;
+      backdrop-filter: blur(5px);
+      padding: 20px;
+      box-sizing: border-box;
+    `;
 
-  const gameOverPanel = document.createElement('div');
-  gameOverPanel.className = 'game-over-panel';
-  gameOverPanel.style.cssText = `
-    background: linear-gradient(135deg, rgba(40,0,0,0.95) 0%, rgba(20,0,0,0.95) 100%);
-    border: 2px solid #ff4444;
-    border-radius: 15px;
-    padding: 20px;
-    text-align: center;
-    color: #ff4444;
-    font-family: 'Orbitron', sans-serif;
-    box-shadow: 
-      0 0 30px rgba(255,68,68,0.6),
-      inset 0 0 30px rgba(255,68,68,0.1);
-    animation: pulse 2s infinite;
-    max-width: 90vw;
-    max-height: 90vh;
-    width: 100%;
-    max-width: 400px;
-    backdrop-filter: blur(20px);
-    overflow-y: auto;
-    box-sizing: border-box;
-  `;
+    const gameOverPanel = document.createElement('div');
+    gameOverPanel.className = 'game-over-panel';
+    gameOverPanel.style.cssText = `
+      background: linear-gradient(135deg, rgba(40,0,0,0.95) 0%, rgba(20,0,0,0.95) 100%);
+      border: 2px solid #ff4444;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      color: #ff4444;
+      font-family: 'Orbitron', sans-serif;
+      box-shadow: 
+        0 0 40px rgba(255,68,68,0.8),
+        inset 0 0 40px rgba(255,68,68,0.15);
+      animation: pulse 2s infinite;
+      max-width: 95vw;
+      max-height: 95vh;
+      width: 100%;
+      max-width: 700px;
+      min-height: 500px;
+      backdrop-filter: blur(25px);
+      overflow-y: auto;
+      box-sizing: border-box;
+    `;
 
-  const minutes = Math.floor(elapsedTime / 60);
-  const seconds = Math.floor(elapsedTime % 60);
-  const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(elapsedTime / 60);
+    const seconds = Math.floor(elapsedTime % 60);
+    const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  gameOverPanel.innerHTML = `
-    <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px; animation: glow 2s infinite; text-shadow: 0 0 20px #ff4444;">
-      MISSION FAILED
-    </div>
-    
-    <div style="font-size: 14px; margin-bottom: 20px; color: #ffffff; opacity: 0.8;">
-      The solar storm has consumed the station
-    </div>
-    
-    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
-      <div style="font-size: 16px; margin-bottom: 15px; color: #00ff88; font-weight: bold;">
-        📊 FINAL MISSION REPORT
+    gameOverPanel.innerHTML = `
+      <div style="font-size: 48px; font-weight: bold; margin-bottom: 25px; animation: glow 2s infinite; text-shadow: 0 0 30px #ff4444;">
+        MISSION FAILED
       </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-        <div style="text-align: left;">
-          <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Astronauts Rescued</div>
-          <div style="color: #00ff88; font-weight: bold; font-size: 20px;">${finalScore}</div>
+      <div style="font-size: 18px; margin-bottom: 35px; color: #ffffff; opacity: 0.8;">
+        The solar storm has consumed the station
+      </div>
+      
+      <div style="background: rgba(0,0,0,0.4); padding: 25px; border-radius: 15px; margin-bottom: 35px; border: 1px solid rgba(255,255,255,0.15);">
+        <div style="font-size: 24px; margin-bottom: 25px; color: #00ff88; font-weight: bold;">
+          📊 FINAL MISSION REPORT
         </div>
-        <div style="text-align: right;">
-          <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Time Survived</div>
-          <div style="color: #6596ff; font-weight: bold; font-size: 20px;">${timeFormatted}</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
+          <div style="text-align: left;">
+            <div style="color: #cccccc; font-size: 16px; margin-bottom: 8px;">Astronauts Rescued</div>
+            <div style="color: #00ff88; font-weight: bold; font-size: 36px;">${finalScore}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="color: #cccccc; font-size: 16px; margin-bottom: 8px;">Time Survived</div>
+            <div style="color: #6596ff; font-weight: bold; font-size: 36px;">${timeFormatted}</div>
+          </div>
+        </div>
+        
+        <div style="border-top: 1px solid rgba(255,255,255,0.15); padding-top: 25px;">
+          <div style="color: #cccccc; font-size: 16px; margin-bottom: 8px;">Final Score</div>
+          <div style="color: #ffffff; font-weight: bold; font-size: 42px; text-shadow: 0 0 20px #ffffff;">${finalScore * 100}</div>
         </div>
       </div>
       
-      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-        <div style="color: #cccccc; font-size: 12px; margin-bottom: 3px;">Final Score</div>
-        <div style="color: #ffffff; font-weight: bold; font-size: 24px; text-shadow: 0 0 15px #ffffff;">${finalScore * 100}</div>
+      <div style="font-size: 16px; color: #999999; margin-bottom: 35px; line-height: 1.6;">
+        Your heroic rescue mission will be remembered.<br>
+        Every life saved was a victory against the void.
       </div>
-    </div>
-    
-    <div style="font-size: 12px; color: #999999; margin-bottom: 20px; line-height: 1.4;">
-      Your heroic rescue mission will be remembered.<br>
-      Every life saved was a victory against the void.
-    </div>
-    
-    <div style="font-size: 11px; color: #666666; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 6px;">
-      Press <span style="color: #00ff88; font-weight: bold;">F5</span> to restart mission
-    </div>
-  `;
+      
+      <div style="font-size: 15px; color: #666666; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;">
+        Press <span style="color: #00ff88; font-weight: bold;">F5</span> to restart mission
+      </div>
+    `;
 
-  gameOverOverlay.appendChild(gameOverPanel);
-  document.body.appendChild(gameOverOverlay);
+    gameOverOverlay.appendChild(gameOverPanel);
+    document.body.appendChild(gameOverOverlay);
 
-  const handleRestart = (e) => {
-    if (e.key === 'F5' || e.keyCode === 116) {
-      location.reload();
-    }
-  };
-  
-  document.addEventListener('keydown', handleRestart);
-  
-  this.gameOverOverlay = gameOverOverlay;
-  this.restartHandler = handleRestart;
-}
+    const handleRestart = (e) => {
+      if (e.key === 'F5' || e.keyCode === 116) {
+        location.reload();
+      }
+    };
+    
+    document.addEventListener('keydown', handleRestart);
+    
+    this.gameOverOverlay = gameOverOverlay;
+    this.restartHandler = handleRestart;
+  }
 
   updateStatus(score) {
     const scoreValue = document.getElementById('score-value');
@@ -709,5 +723,27 @@ export class GameHUD {
     if (this.energyBar) {
       this.energyBar.style.width = `${percent}%`;
     }
+  }
+
+  show() {
+      // Mostra tutti gli elementi HUD che sono nascosti all'inizio
+      if (this.hudElement) {
+          this.hudElement.style.display = 'block';
+          this.hudElement.style.opacity = '1';
+      }
+      
+      // Se hai altri elementi HUD, mostrali qui
+      // Esempio:
+      // this.timerElement.style.display = 'block';
+      // this.scoreElement.style.display = 'block';
+      // this.energyElement.style.display = 'block';
+  }
+
+  // Opzionale: aggiungi anche un metodo hide() se vuoi nascondere l'HUD
+  hide() {
+      if (this.hudElement) {
+          this.hudElement.style.display = 'none';
+          this.hudElement.style.opacity = '0';
+      }
   }
 }

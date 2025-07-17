@@ -21,6 +21,7 @@ export class ShipController {
     this.boostTimer = 0;
     this.boostTimeUsed = 0;
     this.boostRechargeRate = 1.0; // Velocità di ricarica (secondi per secondo)
+    
   }
 
   update(delta) {
@@ -108,6 +109,8 @@ export class ShipController {
         if (shiftPressed && this.boostTimeUsed < this.boostDuration) {
           this.boostTimeUsed += delta;
           this.isBoostActive = true;
+
+          
         } else {
           // Quando rilasci il boost o finisce, vai in ricarica
           this.boostState = 'recharging';
@@ -157,6 +160,10 @@ export class ShipController {
   
   GetIsBoostActive() {
     return this.isBoostActive;
+  }
+
+  GetBoostTimeUsed() {
+    return this.boostTimeUsed;
   }
 
   getConstantSpeed() {
