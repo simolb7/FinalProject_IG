@@ -468,9 +468,6 @@ export class GameHUD {
     
     this.energyBar.style.width = `${percentage}%`;
     this.energyPercentage.textContent = `${Math.round(percentage)}%`;
-
-    console.log({ boostTimeUsed, boostDuration, percentage, isBoostActive, boostState, percentage});
-
     // Rimuovi sempre l'animazione prima di applicare nuovi stili
     this.energyBar.style.animation = 'none';
     
@@ -488,7 +485,6 @@ export class GameHUD {
         this.energyLabel.textContent = '⚡ Charging...';
         this.energyPercentage.style.color = '#ffaa00';
       } else {
-        console.log('Energy is ready');
         this.energyBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #44ff44 100%)';
         this.energyBar.style.boxShadow = '0 0 15px rgba(0,255,136,1), inset 0 0 15px rgba(255,255,255,0.3)';
         this.energyLabel.style.color = '#00ff88';
@@ -648,7 +644,7 @@ export class GameHUD {
     const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
     gameOverPanel.innerHTML = `
-      <div style="font-size: 48px; font-weight: bold; margin-bottom: 25px; animation: glow 2s infinite; text-shadow: 0 0 30px #ff4444;">
+      <div style="font-size: 48px; font-weight: bold; margin-bottom: 25px; animation: glow 2s infinite; text-shadow: 0 0 30px #ff4444; border-radius: 15px; ">
         MISSION FAILED
       </div>
       

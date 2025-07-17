@@ -34,7 +34,7 @@ const playerDirection = new THREE.Vector3();
 let asteroidModels = []; // array globale per tenere i modelli caricati
 
 
-let isRestarting = false;
+let marsObject;
 
 const collisionSystem = new CollisionSystem();
 
@@ -55,6 +55,8 @@ async function init() {
 
   // Crea starfield
   starfield = await createStarfield(scene);
+
+  createMarsBackground();
   // Illuminazione
   setupDynamicLighting();
   // Carica modello navicella
@@ -120,49 +122,61 @@ function startGame() {
   // Mostra l'HUD del gioco SOLO quando il gioco inizia
   gameHUD.show();
 }
-
-async function spawnRandomModels() {
-    try {
-        spawnedModels = await spawnMultipleFBXModels(
-            './assets/models/Falling.fbx', 
-            scene, 
-            20,
-            {
-                spawnArea: { 
-                    x: { min: -30, max: 30 }, 
-                    y: { min: 0, max: 0 }, 
-                    z: { min: -30, max: 30 } 
-                },
-                rotation: new THREE.Vector3(0, Math.PI, 0), // Ruotali se necessario
-                scale: new THREE.Vector3(0.08, 0.08, 0.08),
-                spacing: 8
-            }
-        );
-        
-        console.log('20 modelli spawnati con successo!');
-    } catch (error) {
-        console.error('Errore nello spawn:', error);
-    }
+function createMarsBackground() {
+    // Geometria principale di Marte
+    const marsGeometry = new THREE.SphereGeometry(350, 64, 32);
+    
+    // Carica la texture NASA
+    const textureLoader = new THREE.TextureLoader();
+    const marsTexture = textureLoader.load(
+        'assets/models/texture/space/8k_mars.jpg',
+        (texture) => {
+            console.log('Texture Mars NASA caricata con successo');
+        },
+        undefined,
+        (error) => {
+            console.log('Errore caricamento texture Mars NASA:', error);
+        }
+    );
+    
+    // Materiale che emette luce propria
+    const marsMaterial = new THREE.MeshStandardMaterial({
+        map: marsTexture,
+        emissive: 0x331100, // Leggera emissione arancione
+        emissiveIntensity: 0.1,
+        roughness: 0.8,
+        metalness: 0.1
+    });
+    
+    marsObject = new THREE.Mesh(marsGeometry, marsMaterial);
+    
+    
+    // Posizione relativa che seguirà la camera
+    marsObject.userData.relativePosition = new THREE.Vector3(-500, -100, 400);
+    
+    marsObject.rotation.x = Math.random() * Math.PI;
+    marsObject.rotation.y = Math.random() * Math.PI;
+    marsObject.rotationSpeed = { x: 0.00000001, y: 0.00000003, z: 0.0000001 };
+    
+    
+    scene.add(marsObject);
+    
+    return marsObject;
 }
 
-
-async function spawnAstronaut() {
-    try {
-        // Spawna il modello nella posizione (0, 0, 0)
-        const model = await spawnFBXModel(
-            './assets/models/Falling.fbx', 
-            scene, 
-            new THREE.Vector3(0, 0, 0)
-        );
-        
-        console.log('Modello spawnato con successo!');
-        return model;
-    } catch (error) {
-        console.error('Errore nello spawn del modello:', error);
-    }
+function updateMarsBackground() {
+    if (!marsObject || !camera) return;
+    
+    // Fai seguire Marte alla camera mantenendo la posizione relativa
+    const relativePos = marsObject.userData.relativePosition;
+    marsObject.position.copy(camera.position).add(relativePos);
+    
+    // Rotazione continua del pianeta
+    marsObject.rotation.x += marsObject.rotationSpeed.x;
+    marsObject.rotation.y += marsObject.rotationSpeed.y;
+    marsObject.rotation.z += marsObject.rotationSpeed.z;
+    
 }
-
-
 async function loadSpaceship() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
@@ -197,11 +211,11 @@ async function loadAsteroidModels() {
 
 function setupDynamicLighting() {
   // 1. Luce ambientale per illuminazione generale
-  ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Luce soffusa
+  ambientLight = new THREE.AmbientLight(0x404040, 2.5); // Luce soffusa
   scene.add(ambientLight);
 
   // 2. Luce principale (Key Light) - segue la nave
-  keyLight = new THREE.DirectionalLight(0xfff8dc, 1.5);
+  keyLight = new THREE.DirectionalLight(0xfff8dc, 4);
   keyLight.position.set(-30, 10, 20);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.width = 2048;
@@ -209,12 +223,12 @@ function setupDynamicLighting() {
   scene.add(keyLight);
 
   // 3. Luce di riempimento (Fill Light) - illumina le ombre
-  fillLight = new THREE.DirectionalLight(0x4444ff, 0.3);
+  fillLight = new THREE.DirectionalLight(0xfff8dc , 2  );
   fillLight.position.set(30, 0, 5);
   scene.add(fillLight);
 
   // 4. Luce principale mobile che segue la nave
-  mainLight = new THREE.PointLight(0xffffff, 1.5, 100);
+  mainLight = new THREE.PointLight(0xffffff, 3 , 100);
   mainLight.position.set(0, 5, 5);
   scene.add(mainLight);
 
@@ -375,6 +389,7 @@ function animate(time) {
   cameraController.update(delta);
 
   updateDynamicLighting();
+  updateMarsBackground();
 
   // Aggiorna starfield
   if (starfield) {
@@ -394,6 +409,7 @@ function animate(time) {
 
   // Asteroidi dinamici
   updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates);
+
   updateOptimizedSpawn(
         scene,
         ship.position,
