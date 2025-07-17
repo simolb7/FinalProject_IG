@@ -21,6 +21,9 @@ export class ShipController {
     this.boostTimer = 0;
     this.boostTimeUsed = 0;
     this.boostRechargeRate = 1.0; // Velocità di ricarica (secondi per secondo)
+    this.boostLockoutDuration = 1.0; // 1 secondo di blocco
+    this.boostLockoutTimer = 0;
+    this.isBoostLockedOut = false;
     
   }
 
@@ -96,6 +99,15 @@ export class ShipController {
 
   handleBoost(delta) {
     const shiftPressed = this.keys['shift'] || this.keys['shiftleft'];
+
+    if (this.isBoostLockedOut) {
+      this.boostLockoutTimer -= delta;
+      if (this.boostLockoutTimer <= 0) {
+        this.isBoostLockedOut = false;
+        this.boostLockoutTimer = 0;
+      }
+    }
+  
     
     switch (this.boostState) {
       case 'ready':
@@ -110,11 +122,17 @@ export class ShipController {
           this.boostTimeUsed += delta;
           this.isBoostActive = true;
 
-          
+          if (this.boostTimeUsed >= this.boostDuration) {
+                    this.boostState = 'recharging';
+                    this.isBoostActive = false;
+                    // Attiva il lockout quando si esaurisce
+                    this.isBoostLockedOut = true;
+                    this.boostLockoutTimer = this.boostLockoutDuration;
+                  }
         } else {
-          // Quando rilasci il boost o finisce, vai in ricarica
-          this.boostState = 'recharging';
-          this.isBoostActive = false;
+                  // Quando rilasci il boost prima che finisca, vai in ricarica senza lockout
+                  this.boostState = 'recharging';
+                  this.isBoostActive = false;
         }
         break;
         
@@ -127,12 +145,12 @@ export class ShipController {
           this.boostTimeUsed = Math.max(0, this.boostTimeUsed);
         }
         
-        // Se hai carica disponibile e premi shift, torna attivo
-        if (shiftPressed && this.boostTimeUsed < this.boostDuration) {
+          // Se hai carica disponibile e premi shift, torna attivo
+        if (shiftPressed && this.boostTimeUsed < this.boostDuration && !this.isBoostLockedOut) {
           this.boostState = 'active';
           this.isBoostActive = true;
         }
-        
+          
         // Se è completamente ricaricato, torna ready
         if (this.boostTimeUsed <= 0) {
           this.boostState = 'ready';
