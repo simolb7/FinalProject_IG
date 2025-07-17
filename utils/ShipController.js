@@ -5,23 +5,23 @@ export class ShipController {
     this.ship = ship;
     this.keys = keys;
     this.speedMultiplier = 1.0;
-    // Parametri di movimento
-    this.CONSTANT_SPEED = 60; // Velocità costante della navicella
-    this.TURN_SPEED = 4; // Velocità di rotazione
-    // Stato del movimento
+ 
+    this.CONSTANT_SPEED = 60; 
+    this.TURN_SPEED = 4; 
+
     this.shipVelocity = new THREE.Vector3();
     this.shipSpeed = 0;
     this.prevPosition = new THREE.Vector3();
 
-    this.BOOST_MULTIPLIER = 3.0; // Moltiplicatore per il boost
+    this.BOOST_MULTIPLIER = 3.0;
     this.isBoostActive = false;
     this.boostState = 'ready'; 
-    this.boostDuration = 5.0; // Durata boost in secondi (era 5.0)
-    this.boostCooldown = 3.0; // Cooldown in secondi
+    this.boostDuration = 5.0; 
+    this.boostCooldown = 3.0; 
     this.boostTimer = 0;
     this.boostTimeUsed = 0;
-    this.boostRechargeRate = 1.0; // Velocità di ricarica (secondi per secondo)
-    this.boostLockoutDuration = 1.0; // 1 secondo di blocco
+    this.boostRechargeRate = 1.0; 
+    this.boostLockoutDuration = 1.0;
     this.boostLockoutTimer = 0;
     this.isBoostLockedOut = false;
     
@@ -30,30 +30,24 @@ export class ShipController {
   update(delta) {
     if (!this.ship) return;
 
-    // Salva posizione precedente per calcolare velocità
     this.prevPosition.copy(this.ship.position);
     this.handleBoost(delta);
 
-    // === MOVIMENTO A VELOCITÀ COSTANTE ===
-    // La navicella si muove sempre in avanti alla velocità costante
     const direction = new THREE.Vector3(0, 0, 1)
       .applyQuaternion(this.ship.quaternion)
       .normalize();
     
     const currentSpeed = this.CONSTANT_SPEED * (this.isBoostActive ? this.BOOST_MULTIPLIER : 1);
     this.ship.position.addScaledVector(direction, currentSpeed * this.speedMultiplier * delta);
-    // === CONTROLLI DIREZIONALI ===
+
     this.handleInput(delta);
 
-    // Calcola intensità propulsori in base alla velocità attuale
     const normalizedPower = Math.min(this.shipSpeed / this.CONSTANT_SPEED, 1);
 
-    // Determina inclinazione in base ai tasti laterali
     const lateralInput = (this.keys['a'] || this.keys['arrowleft']) ? -1 :
                         (this.keys['d'] || this.keys['arrowright']) ? 1 : 0;
     const tilt = THREE.MathUtils.degToRad(5 * lateralInput);
-    
-    // Calcola velocità per debug
+
     this.shipVelocity = this.ship.position.clone().sub(this.prevPosition);
     this.shipSpeed = this.shipVelocity.length();
   }
@@ -66,14 +60,13 @@ export class ShipController {
     const left = this.keys['a'] || this.keys['arrowleft'];
     const right = this.keys['d'] || this.keys['arrowright'];
 
-    // WASD controlla solo la direzione/rotazione
     if (left) {
       this.ship.rotation.y += this.TURN_SPEED * delta;
-      targetRot.z = 0.3; // Inclinazione durante la virata
+      targetRot.z = 0.3;
     }
     if (right) {
       this.ship.rotation.y -= this.TURN_SPEED * delta;
-      targetRot.z = -0.3; // Inclinazione durante la virata
+      targetRot.z = -0.3; 
     }
     if (forward) {
       const newPitch = this.ship.rotation.x - this.TURN_SPEED * delta;
@@ -84,15 +77,12 @@ export class ShipController {
       this.ship.rotation.x = newPitch;
     }
 
-    // Reset inclinazioni se non premi nulla
     if (!forward && !backward) targetRot.x = 0;
     if (!left && !right) targetRot.z = 0;
 
-    // Interpolazione fluida delle inclinazioni (non della rotazione principale)
     const currentRotX = this.ship.rotation.x;
     const currentRotZ = this.ship.rotation.z;
     
-    // Mantieni la rotazione Y (direzione) ma interpola le inclinazioni
     this.ship.rotation.x = THREE.MathUtils.lerp(currentRotX, targetRot.x + currentRotX, 0.1);
     this.ship.rotation.z = THREE.MathUtils.lerp(currentRotZ, targetRot.z, 0.1);
   }
@@ -125,12 +115,10 @@ export class ShipController {
           if (this.boostTimeUsed >= this.boostDuration) {
                     this.boostState = 'recharging';
                     this.isBoostActive = false;
-                    // Attiva il lockout quando si esaurisce
                     this.isBoostLockedOut = true;
                     this.boostLockoutTimer = this.boostLockoutDuration;
                   }
         } else {
-                  // Quando rilasci il boost prima che finisca, vai in ricarica senza lockout
                   this.boostState = 'recharging';
                   this.isBoostActive = false;
         }
@@ -139,19 +127,17 @@ export class ShipController {
       case 'recharging':
         this.isBoostActive = false;
         
-        // Ricarica il boost
+
         if (this.boostTimeUsed > 0) {
           this.boostTimeUsed -= this.boostRechargeRate * delta;
           this.boostTimeUsed = Math.max(0, this.boostTimeUsed);
         }
-        
-          // Se hai carica disponibile e premi shift, torna attivo
+
         if (shiftPressed && this.boostTimeUsed < this.boostDuration && !this.isBoostLockedOut) {
           this.boostState = 'active';
           this.isBoostActive = true;
         }
-          
-        // Se è completamente ricaricato, torna ready
+
         if (this.boostTimeUsed <= 0) {
           this.boostState = 'ready';
           this.boostTimeUsed = 0;
@@ -159,7 +145,7 @@ export class ShipController {
         break;
     }
   }
-  // Getter per accedere ai dati dall'esterno
+
   getPosition() {
     return this.ship ? this.ship.position : new THREE.Vector3();
   }
@@ -192,7 +178,6 @@ export class ShipController {
     return Math.max(0, this.boostDuration - this.boostTimeUsed);
   }
 
-  // Metodi per modificare i parametri durante il runtime
   setSpeed(speed) {
     this.CONSTANT_SPEED = speed;
   }

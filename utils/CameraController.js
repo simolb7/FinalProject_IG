@@ -6,15 +6,13 @@ export class CameraController {
     this.ship = ship;
     this.enabled = true;
     
-    // Posizione attuale della camera (per interpolazione fluida)
     this.cameraPosition = new THREE.Vector3();
     
-    // Parametri camera third-person
-    this.offset = new THREE.Vector3(0, 15, -45); // Offset dalla navicella
-    this.lookAheadDistance = new THREE.Vector3(0, 5, 15); // Dove guardare rispetto alla navicella
-    this.followSpeed = 0.08; // Velocità di interpolazione (0-1, più basso = più fluido)
+    this.offset = new THREE.Vector3(0, 15, -45); 
+    this.lookAheadDistance = new THREE.Vector3(0, 5, 15); 
+    this.followSpeed = 0.08; 
     
-    // Inizializza posizione camera
+
     if (this.ship) {
       this.cameraPosition.copy(this.ship.position);
     }
@@ -29,16 +27,13 @@ export class CameraController {
 
   updateThirdPersonCamera() {
     if (!this.enabled) return;
-    // Calcola posizione ideale della camera basata sulla rotazione della navicella
     const idealOffset = this.offset.clone()
       .applyQuaternion(this.ship.quaternion)
       .add(this.ship.position);
 
-    // Interpolazione fluida verso la posizione ideale
     this.cameraPosition.lerp(idealOffset, this.followSpeed);
     this.camera.position.copy(this.cameraPosition);
 
-    // Calcola punto dove guardare (davanti alla navicella)
     const lookAtTarget = this.lookAheadDistance.clone()
       .applyQuaternion(this.ship.quaternion)
       .add(this.ship.position);
@@ -46,36 +41,30 @@ export class CameraController {
     this.camera.lookAt(lookAtTarget);
   }
 
-  // Metodi per cambiare modalità camera
   setFirstPersonView() {
-    // Camera in prima persona (dentro la cockpit)
     this.offset.set(0, 2, 5);
     this.lookAheadDistance.set(0, 0, 50);
     this.followSpeed = 0.3;
   }
 
   setThirdPersonView() {
-    // Camera in terza persona (dietro la navicella)
     this.offset.set(0, 15, -45);
     this.lookAheadDistance.set(0, 5, 15);
     this.followSpeed = 0.08;
   }
 
   setCinematicView() {
-    // Vista cinematica (più distante e fluida)
     this.offset.set(0, 25, -60);
     this.lookAheadDistance.set(0, 0, 30);
     this.followSpeed = 0.05;
   }
 
   setTopDownView() {
-    // Vista dall'alto
     this.offset.set(0, 80, 0);
     this.lookAheadDistance.set(0, 0, 0);
     this.followSpeed = 0.1;
   }
 
-  // Getter per accedere ai parametri
   getPosition() {
     return this.camera.position;
   }
@@ -92,7 +81,6 @@ export class CameraController {
     return this.followSpeed;
   }
 
-  // Setter per modificare i parametri durante il runtime
   setOffset(x, y, z) {
     this.offset.set(x, y, z);
   }
@@ -105,9 +93,7 @@ export class CameraController {
     this.followSpeed = THREE.MathUtils.clamp(speed, 0.01, 1.0);
   }
 
-  // Metodi per animazioni camera speciali
   shake(intensity = 1, duration = 1000) {
-    // Implementa screen shake per esplosioni, impatti, etc.
     const startTime = Date.now();
     const originalOffset = this.offset.clone();
     

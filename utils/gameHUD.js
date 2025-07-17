@@ -403,7 +403,6 @@ export class GameHUD {
       position: relative;
     `;
 
-    // Aggiungi effetto shimmer alla barra
     const shimmer = document.createElement('div');
     shimmer.style.cssText = `
       position: absolute;
@@ -449,17 +448,13 @@ export class GameHUD {
     let percentage;
     
     if (isBoostActive) {
-      // Durante il boost, mostra quanto tempo rimane
       percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
     } else {
       if (boostState === 'recharging') {
-        // Durante la ricarica, mostra quanto è stato ricaricato
         percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
       } else if (boostState === 'ready') {
-        // Quando è pronto, è al 100%
         percentage = 100;
       } else {
-        // Fallback
         percentage = ((boostDuration - boostTimeUsed) / boostDuration) * 100;
       }
     }
@@ -468,7 +463,6 @@ export class GameHUD {
     
     this.energyBar.style.width = `${percentage}%`;
     this.energyPercentage.textContent = `${Math.round(percentage)}%`;
-    // Rimuovi sempre l'animazione prima di applicare nuovi stili
     this.energyBar.style.animation = 'none';
     
     if (isBoostActive) {
@@ -491,8 +485,6 @@ export class GameHUD {
         this.energyLabel.textContent = '⚡ Energy Ready';
         this.energyPercentage.style.color = '#00ff88';
         
-        // Applica l'animazione DOPO aver impostato i colori
-        // Usa un piccolo delay per assicurarti che i colori siano applicati
         setTimeout(() => {
           this.energyBar.style.animation = 'energyPulse 2s infinite';
         }, 10);
@@ -536,7 +528,7 @@ export class GameHUD {
       
       if (progress < 1) {
         opacity = 1 - progress;
-        yOffset = progress * 50; // Si sposta verso l'alto
+        yOffset = progress * 50; 
         
         popup.style.opacity = opacity;
         popup.style.transform = `translate(-50%, -50%) translateY(-${yOffset}px)`;
@@ -688,8 +680,8 @@ export class GameHUD {
     document.body.appendChild(gameOverOverlay);
 
     const handleRestart = (e) => {
-        if (e.code === 'Space') { // Usa 'Space' per la barra spaziatrice
-            e.preventDefault(); // Previene lo scroll della pagina
+        if (e.code === 'Space') { 
+            e.preventDefault(); 
             restartGame(); 
         }
     };
@@ -746,20 +738,12 @@ export class GameHUD {
   }
 
   show() {
-      // Mostra tutti gli elementi HUD che sono nascosti all'inizio
       if (this.hudElement) {
           this.hudElement.style.display = 'block';
           this.hudElement.style.opacity = '1';
       }
-      
-      // Se hai altri elementi HUD, mostrali qui
-      // Esempio:
-      // this.timerElement.style.display = 'block';
-      // this.scoreElement.style.display = 'block';
-      // this.energyElement.style.display = 'block';
   }
 
-  // Opzionale: aggiungi anche un metodo hide() se vuoi nascondere l'HUD
   hide() {
       if (this.hudElement) {
           this.hudElement.style.display = 'none';

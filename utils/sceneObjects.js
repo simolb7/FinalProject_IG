@@ -1,24 +1,23 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 
 let minScale, maxScale;
-const mixers = []; // Array per tenere traccia di tutti i mixer attivi
+const mixers = []; 
 
 const fbxLoader = new FBXLoader();
 
 
 let lastSpawnTime = 0;
-let modelTemplate = null; // Il modello template caricato una sola volta
+let modelTemplate = null; 
 let isModelLoaded = false;
 let asteroidIdCounter = 0;
 
 const SPAWN_CONFIG = {
     spawnRadius: {min: 10, max: 30},           
     minDistanceFromPlayer: 200,  
-    maxModels: 40,              // Aumenta il numero massimo
-    spawnCooldown: 500,        // Spawn più frequente
-    despawnDistance: 5000,       // MOLTO più lontano per non despawnare
+    maxModels: 40,              
+    spawnCooldown: 500,        
+    despawnDistance: 5000,      
     minDistanceBetweenModels: 230, 
 };
 
@@ -59,39 +58,35 @@ export function createReferenceObjects(scene) {
 }
 
 export function updateAsteroidField(playerPosition, playerDirection, scene, models, dropRates) {
-  const spawnRadius = 2200;
-  const maxAsteroids = 300;
+  //before 2200, 300
+  const spawnRadius = 3000;
+  const maxAsteroids = 600;
 
-
-  // Rimuovi quelli troppo lontani
   activeAsteroids = activeAsteroids.filter(entry => {
     const relativePos = entry.mesh.position.clone().sub(playerPosition);
-    const dot = relativePos.dot(playerDirection); // positivo = davanti, negativo = dietro
+    const dot = relativePos.dot(playerDirection); 
 
     const dist = relativePos.length();
 
     if (dot < -spawnRadius * 0.2 || dist > spawnRadius * 1.1) {
-    // se troppo indietro o troppo lontano
-    scene.remove(entry.mesh);
-    return false;
+        scene.remove(entry.mesh);
+        return false;
     }
     return true;
   });
 
-  // Genera nuovi asteroidi davanti alla navicella
   while (activeAsteroids.length < maxAsteroids) {
     const asteroid = createRandomAsteroidInFront(playerPosition, playerDirection, models, dropRates, spawnRadius);
     scene.add(asteroid.mesh);
     activeAsteroids.push(asteroid);
   }
 
-  // Rotazione
+
   activeAsteroids.forEach(entry => {
     entry.mesh.rotation.x += entry.rotationSpeed.x;
     entry.mesh.rotation.y += entry.rotationSpeed.y;
     entry.mesh.rotation.z += entry.rotationSpeed.z;
   });
-   //console.log(`Asteroid: `, activeAsteroids[0]);
 }
 
 function createRandomAsteroidInFront(center, direction, models, dropRates, radius) {
@@ -104,12 +99,12 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
   const gltf = models[modelIndex];
   const mesh = gltf.scene.clone(true);
 
-  // Genera una posizione random davanti al player
+ 
   const forward = direction.clone().normalize();
-  const distance = radius * (0.2 + Math.random() * 0.4); // da 50% a 100% del raggio
+  const distance = radius * (0.2 + Math.random() * 0.4);
   const offset = forward.multiplyScalar(distance);
 
-  // Aggiungi una dispersione laterale
+
   const lateral = new THREE.Vector3(
     (Math.random() - 0.5) * radius * 0.5,
     (Math.random() - 0.5) * radius * 0.5,
@@ -129,7 +124,6 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
     minScale = 0.1;
     maxScale = 0.2;
     } else {
-    // fallback di sicurezza
     minScale = 0.0;
     maxScale = 0.5;
     }
@@ -153,7 +147,6 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
   };
 }
 
-//ASTRONAUT FUNCTION GENERATOR
 
 export async function loadModelTemplate(path) {
     if (isModelLoaded) {
@@ -164,8 +157,7 @@ export async function loadModelTemplate(path) {
         const fbxLoader = new FBXLoader();
         fbxLoader.load(
             path,
-            (fbx) => {
-                // Configura ombre sul template
+            (fbx) => {              
                 fbx.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
@@ -173,7 +165,6 @@ export async function loadModelTemplate(path) {
                     }
                 });
 
-                // NON aggiungere il template alla scena
                 modelTemplate = fbx;
                 isModelLoaded = true;
                 
@@ -191,17 +182,13 @@ export async function loadModelTemplate(path) {
 }
 
 function cloneModelDeep(original) {
-    // Usa il metodo clone nativo di Three.js che gestisce correttamente skeletal mesh
     const cloned = original.clone();
     
-    // Ricrea il skeleton se presente
     cloned.traverse((child) => {
         if (child.isSkinnedMesh) {
-            // Per SkinnedMesh, dobbiamo ricreare il skeleton
             const bones = [];
             const boneInverses = [];
             
-            // Trova le bone nell'oggetto clonato
             child.skeleton.bones.forEach((originalBone, index) => {
                 const boneName = originalBone.name;
                 const clonedBone = cloned.getObjectByName(boneName);
@@ -212,14 +199,12 @@ function cloneModelDeep(original) {
                 }
             });
             
-            // Crea il nuovo skeleton
             if (bones.length > 0) {
                 child.skeleton = new THREE.Skeleton(bones, boneInverses);
                 child.bind(child.skeleton);
             }
         }
         
-        // Assicurati che le proprietà di shadowing siano copiate
         if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
@@ -242,37 +227,29 @@ export function cloneModel(scene, options = {}) {
 
     
     
-    // Usa la clonazione profonda corretta
     const clonedModel = cloneModelDeep(modelTemplate);
     
-    // Applica trasformazioni
     clonedModel.position.copy(position);
     clonedModel.rotation.setFromVector3(rotation);
     clonedModel.scale.copy(scale);
 
    
 
-    // Configura le animazioni per il clone
     if (modelTemplate.animations && modelTemplate.animations.length > 0) {
         const mixer = new THREE.AnimationMixer(clonedModel);
         
-        // Clona le animazioni per il nuovo modello
         const clonedAnimations = modelTemplate.animations.map(clip => clip.clone());
         
-        // Usa la prima animazione clonata
         const action = mixer.clipAction(clonedAnimations[0]);
         
-        // Configura l'animazione
         action.setLoop(THREE.LoopRepeat);
         action.clampWhenFinished = false;
         
-        // Randomizza il tempo di inizio per varietà
         const randomStart = Math.random() * clonedAnimations[0].duration;
         action.time = randomStart;
         
         action.play();
         
-        // Salva il mixer e le animazioni nel modello
         clonedModel.mixer = mixer;
         clonedModel.animations = clonedAnimations;
         mixers.push(mixer);
@@ -282,7 +259,6 @@ export function cloneModel(scene, options = {}) {
         console.warn('Nessuna animazione disponibile per il clone');
     }
 
-    // Aggiungi alla scena
     scene.add(clonedModel);
 
     
@@ -306,31 +282,25 @@ function createAstronautInFront(center, direction, radius) {
 
     const actualRadius = (typeof radius === 'object') ? radius.max : radius;
 
-    // Direzione base del giocatore
-    const forward = direction.clone().normalize();
+   const forward = direction.clone().normalize();
     
-    // CAMPO DI SPAWN: lontano e distribuito
-    const minDistance = 150;  // Molto lontano
-    const maxDistance = 300;  // Ancora più lontano
+   const minDistance = 150;  
+    const maxDistance = 300;  
     const distance = minDistance + Math.random() * (maxDistance - minDistance);
     
-    // Crea un cono davanti al giocatore
-    const angle = (Math.random() - 0.5) * Math.PI * 0.8; // Cono di 144 gradi
-    const height = (Math.random() - 0.5) * 50; // Variazione in altezza
+    const angle = (Math.random() - 0.5) * Math.PI * 0.8; 
+    const height = (Math.random() - 0.5) * 50; 
     
-    // Ruota la direzione forward per l'angolo
     const rotatedDirection = new THREE.Vector3(
         forward.x * Math.cos(angle) - forward.z * Math.sin(angle),
         forward.y,
         forward.x * Math.sin(angle) + forward.z * Math.cos(angle)
     ).normalize();
     
-    // Posizione finale
     const finalPos = center.clone()
         .add(rotatedDirection.multiplyScalar(distance))
         .add(new THREE.Vector3(0, height, 0));
 
-    // Verifica che non sia troppo vicino ad altri astronauti
     const tooClose = activeAstronauts.some(model => {
         const distance = finalPos.distanceTo(model.position);
         return distance < SPAWN_CONFIG.minDistanceBetweenModels;
@@ -345,11 +315,9 @@ function createAstronautInFront(center, direction, radius) {
         clonedModel.position.copy(finalPos);
         clonedModel.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
         
-        // Scala appropriata per la distanza
-        const scale = 0.05; // Più grande per essere visibile in lontananza
+        const scale = 0.05;
         clonedModel.scale.setScalar(scale);
 
-        // resto del codice per animazioni...
         if (modelTemplate.animations && modelTemplate.animations.length > 0) {
             const mixer = new THREE.AnimationMixer(clonedModel);
             const clonedAnimations = modelTemplate.animations.map(clip => clip.clone());
@@ -387,25 +355,20 @@ export function updateOptimizedSpawn(scene, playerPosition, playerDirection, del
 
     const currentTime = Date.now();
     
-    // Rimuovi modelli troppo lontani
-    despawnDistantModels(scene, playerPosition);
+   despawnDistantModels(scene, playerPosition);
     
-    // Controlla se possiamo spawnare
-    if (shouldSpawn(currentTime) && activeAstronauts.length < SPAWN_CONFIG.maxModels) {
-        let newAstronaut = null;
-        
-        // SEMPRE spawn davanti per il gameplay
-        newAstronaut = createAstronautInFront(
-            playerPosition, 
-            playerDirection, 
-            SPAWN_CONFIG.spawnRadius
-        );
-        
-        if (newAstronaut) {
-            scene.add(newAstronaut);
-            activeAstronauts.push(newAstronaut);
-            lastSpawnTime = currentTime;
-          
+  if (shouldSpawn(currentTime) && activeAstronauts.length < SPAWN_CONFIG.maxModels) {
+    let newAstronaut = null;
+    newAstronaut = createAstronautInFront(
+        playerPosition, 
+        playerDirection, 
+        SPAWN_CONFIG.spawnRadius
+    );
+    
+    if (newAstronaut) {
+        scene.add(newAstronaut);
+        activeAstronauts.push(newAstronaut);
+        lastSpawnTime = currentTime;
         }
     }
 }
@@ -445,14 +408,13 @@ function despawnDistantModels(scene, playerPosition) {
         }
     });
     
-    // Rimuovi i modelli distanti
     modelsToRemove.reverse().forEach(({ model, index }) => {
         removeProceduralModel(scene, model, index);
     });
 }
 
 function removeProceduralModel(scene, model, index) {
-    // Rimuovi il mixer dalle animazioni
+
     if (model.mixer) {
         const mixerIndex = mixers.indexOf(model.mixer);
         if (mixerIndex > -1) {
@@ -460,10 +422,8 @@ function removeProceduralModel(scene, model, index) {
         }
     }
     
-    // Rimuovi dalla scena
     scene.remove(model);
     
-    // Pulisci le risorse
     model.traverse((child) => {
         if (child.isMesh) {
             if (child.geometry) child.geometry.dispose();
@@ -476,8 +436,7 @@ function removeProceduralModel(scene, model, index) {
             }
         }
     });
-    
-    // Rimuovi dall'array
+
     activeAstronauts.splice(index, 1);
     
     

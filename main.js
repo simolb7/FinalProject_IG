@@ -4,7 +4,6 @@ import { ShipController } from './utils/ShipController.js';
 import { CameraController } from './utils/CameraController.js';
 import { createStarfield} from './utils/starfield.js';
 import {  updateAsteroidField  } from './utils/sceneObjects.js';
-import { DebugHUD } from './utils/debugHUD.js';
 import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
@@ -19,9 +18,14 @@ let thrusterL, thrusterR;
 let mainLight, fillLight, keyLight, ambientLight;
 
 let startScreen;
-let gameState = 'START'; // 'START', 'PLAYING', 'GAME_OVER'
+let gameState = 'START';
 let gameInitialized = false;
-
+const dropRates = [0.4, 0.4, 0.2]; 
+const playerDirection = new THREE.Vector3(); 
+let asteroidModels = []; 
+let marsObject;
+const collisionSystem = new CollisionSystem();
+let score = 0;
 const keys = {};
 let gameOver = false;
 const modelPaths = [
@@ -29,37 +33,24 @@ const modelPaths = [
   'assets/models/asteroid2.glb',
   'assets/models/asteroid3.glb'
 ];
-const dropRates = [0.4, 0.4, 0.2]; // somma = 1.0
-const playerDirection = new THREE.Vector3(); 
-let asteroidModels = []; // array globale per tenere i modelli caricati
 
-
-let marsObject;
-
-const collisionSystem = new CollisionSystem();
-
-let score = 0;
 
 init()
-
 animate();
 
 
 async function init() {
-  // Setup base Three.js
+  
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // Crea starfield
   starfield = await createStarfield(scene);
 
   createMarsBackground();
-  // Illuminazione
   setupDynamicLighting();
-  // Carica modello navicella
   const { ship: loadedShip, thrusterL, thrusterR } = await loadSpaceship();
   ship = loadedShip;
   await loadAsteroidModels();
@@ -76,35 +67,27 @@ async function init() {
   shipController = new ShipController(ship, keys);
   cameraController = new CameraController(camera, ship);
 
-  // CREA L'HUD MA NON MOSTRARLO
   gameHUD = new GameHUD();
   window.gameHUD = gameHUD;
 
   timer = new GameTimer(62);
-  // Event listeners
   setupEventListeners();
 
   console.log('Inizializzazione completata');
 
     if (checkIfRestart()) {
-    // Se è un restart, salta lo start menu e inizia direttamente
     startGame();
   } else {
-    // Altrimenti mostra lo start menu normalmente
     startScreen = new StartScreen();
     startScreen.show(startGame);
   }
-  
   gameInitialized = true;
-
 }
 
 function checkIfRestart() {
-  // Controlla se c'è un flag nel sessionStorage
   const isRestart = sessionStorage.getItem('gameRestart') === 'true';
   
   if (isRestart) {
-    // Rimuovi il flag dopo averlo letto
     sessionStorage.removeItem('gameRestart');
     return true;
   }
@@ -116,17 +99,13 @@ function startGame() {
   console.log('Avvio del gioco!');
   gameState = 'PLAYING';
   
-  // Avvia il timer solo quando il gioco inizia
   timer.start();
   
-  // Mostra l'HUD del gioco SOLO quando il gioco inizia
   gameHUD.show();
 }
 function createMarsBackground() {
-    // Geometria principale di Marte
     const marsGeometry = new THREE.SphereGeometry(350, 64, 32);
     
-    // Carica la texture NASA
     const textureLoader = new THREE.TextureLoader();
     const marsTexture = textureLoader.load(
         'assets/models/texture/space/8k_mars.jpg',
@@ -139,10 +118,9 @@ function createMarsBackground() {
         }
     );
     
-    // Materiale che emette luce propria
     const marsMaterial = new THREE.MeshStandardMaterial({
         map: marsTexture,
-        emissive: 0x331100, // Leggera emissione arancione
+        emissive: 0x331100, 
         emissiveIntensity: 0.1,
         roughness: 0.8,
         metalness: 0.1
@@ -151,27 +129,23 @@ function createMarsBackground() {
     marsObject = new THREE.Mesh(marsGeometry, marsMaterial);
     
     
-    // Posizione relativa che seguirà la camera
     marsObject.userData.relativePosition = new THREE.Vector3(-500, -100, 400);
     
     marsObject.rotation.x = Math.random() * Math.PI;
     marsObject.rotation.y = Math.random() * Math.PI;
-    marsObject.rotationSpeed = { x: 0.00000001, y: 0.00000003, z: 0.0000001 };
-    
+    marsObject.rotationSpeed = { x: 0.00000001, y: 0.00000003, z: 0.0000001 };  
     
     scene.add(marsObject);
-    
+  
     return marsObject;
 }
 
 function updateMarsBackground() {
     if (!marsObject || !camera) return;
     
-    // Fai seguire Marte alla camera mantenendo la posizione relativa
     const relativePos = marsObject.userData.relativePosition;
     marsObject.position.copy(camera.position).add(relativePos);
     
-    // Rotazione continua del pianeta
     marsObject.rotation.x += marsObject.rotationSpeed.x;
     marsObject.rotation.y += marsObject.rotationSpeed.y;
     marsObject.rotation.z += marsObject.rotationSpeed.z;
@@ -234,14 +208,12 @@ function setupDynamicLighting() {
 
 }
 
-// === AGGIORNAMENTO ILLUMINAZIONE DINAMICA ===
 function updateDynamicLighting() {
   if (!ship) return;
 
   const shipPosition = ship.position;
   const cameraPosition = camera.position;
   
-  // Aggiorna posizione luce principale - sempre tra camera e nave
   const lightOffset = new THREE.Vector3()
     .subVectors(cameraPosition, shipPosition)
     .normalize()
@@ -249,27 +221,24 @@ function updateDynamicLighting() {
   
   mainLight.position.copy(shipPosition).add(lightOffset);
 
-  // Aggiorna Key Light - sempre davanti alla nave dalla prospettiva della camera
   const keyLightPosition = new THREE.Vector3()
     .subVectors(cameraPosition, shipPosition)
     .normalize()
     .multiplyScalar(20);
-  keyLightPosition.y += 10; // Leggermente sopra
-  
+  keyLightPosition.y += 10;
+
   keyLight.position.copy(shipPosition).add(keyLightPosition);
   keyLight.lookAt(shipPosition);
 
-  // Aggiorna Fill Light - dal lato opposto
   const fillLightPosition = new THREE.Vector3()
     .subVectors(shipPosition, cameraPosition)
     .normalize()
     .multiplyScalar(15);
-  fillLightPosition.y -= 5; // Leggermente sotto
+  fillLightPosition.y -= 5; 
   
   fillLight.position.copy(shipPosition).add(fillLightPosition);
   fillLight.lookAt(shipPosition);
 
-  // Intensità dinamica basata sulla velocità
   const velocity = shipController.getVelocity();
   const speed = velocity.length();
   const speedMultiplier = 1 + (speed * 0.1);
@@ -293,10 +262,8 @@ function onWindowResize() {
 function restartGame() {
   console.log('Riavvio del gioco...');
   
-  // Imposta il flag di restart
   sessionStorage.setItem('gameRestart', 'true');
   
-  // Ricarica la pagina
   location.reload();
 }
 
@@ -314,22 +281,11 @@ function endGame() {
     const elapsedTime = timer.startTime ? (performance.now() - timer.startTime) / 1000 : 0;
     console.log('Calculated elapsed time:', elapsedTime-1);
     
-    // Passa la funzione restart al gameHUD
     gameHUD.showGameOver(score, elapsedTime-1, restartGame);
     
-    // Rimuovi i vecchi event listeners
     window.removeEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
     window.removeEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 }
-
-function hideGameHUD() {
-  if (gameHUD && gameHUD.hide) {
-    gameHUD.hide();
-  }
-}
-
-// Aggiungi queste funzioni al tuo file main
-
 
 function animate(time) {
   requestAnimationFrame(animate);
@@ -337,16 +293,12 @@ function animate(time) {
 
 
   if (gameState === 'START') {
-    // Durante lo start, renderizza solo la scena 3D di base
     if (ship && starfield) {
-      // Aggiorna starfield
       starfield.position.copy(camera.position);
       starfield.rotation.y += 0.0001;
       
-      // Aggiorna illuminazione di base
       updateDynamicLighting();
       
-      // Renderizza la scena
       renderer.render(scene, camera);
     }
     return;
@@ -358,12 +310,10 @@ function animate(time) {
   const delta = (time - (animate.prevTime || time)) / 1400;
   animate.prevTime = time;
 
-
-  const timeElapsed = performance.now() / 1000; // tempo in secondi
+  const timeElapsed = performance.now() / 1000; 
   updateExplosions(delta);
   
 
-  // Aggiorna tempeste
   if (stormManager) {
     stormManager.update(delta, timeElapsed);
 
@@ -391,23 +341,16 @@ function animate(time) {
   updateDynamicLighting();
   updateMarsBackground();
 
-  // Aggiorna starfield
   if (starfield) {
     starfield.position.copy(camera.position);
     starfield.rotation.y += 0.0001;
   }
-
-  // Aggiorna debug HUD
-  //debugHUD.update(ship, camera, shipController.getSpeed(), delta, keys);
-
-  // Aggiorna animazioni se presenti
-  if (animate.mixers) {
+if (animate.mixers) {
     animate.mixers.forEach((m) => m.update(delta));
   }
 
   ship.getWorldDirection(playerDirection);
 
-  // Asteroidi dinamici
   updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates);
 
   updateOptimizedSpawn(
@@ -417,9 +360,7 @@ function animate(time) {
         delta
     );
 
-  //updateAstronauts(ship.position, playerDirection, scene);
   updateAnimations(delta);
-  const boostTimeRemaining = shipController.getBoostTimeRemaining();
   const boostTimeUsed = shipController.GetBoostTimeUsed();
   const boostDuration = shipController.getBoostDuration();
   const boostTimer = shipController.getBoostTimer();
@@ -431,46 +372,34 @@ function animate(time) {
 
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     
-    // Se ci sono collisioni, rimuovi gli astronauti
   collidedAstronauts.forEach(astronaut => {
-        // Rimuovi dalla scena
-
+       
         const collisionPoint = new THREE.Vector3().addVectors(
             astronaut.position,
             ship.position
         ).multiplyScalar(0.5);
     
-    // Mostra il popup +1
         gameHUD.showScorePopup(collisionPoint, camera, renderer);
         collisionSystem.shrinkAstronaut(astronaut, scene, ship);
 
 
         console.log(`Collisione con astronauta: `, astronaut);
-        //scene.remove(astronaut);
         
-        // Rimuovi dalla lista
         const index = activeAstronauts.indexOf(astronaut);
         if (index > -1) {
             activeAstronauts.splice(index, 1);
         }
         score += 1;
         timer.addTime();
-        //gameHUD.showTimeBonus();
         gameHUD.updateStatus(score);
   });
 
   const collidedAsteroids = collisionSystem.checkShipAsteroidCollisions(ship, activeAsteroids);
 
-  // Se ci sono collisioni con asteroidi, ferma il gioco
   if (collidedAsteroids.length > 0) {
       collidedAsteroids.forEach(asteroid => {
 
-          // Animazione di esplosione dell'asteroide
-          //collisionSystem.explodeAsteroid(asteroid, scene, ship);
-         
-        //collisionSystem.explodeShip(ship, scene);
-          // Rimuovi dalla lista
-      const index = activeAsteroids.indexOf(asteroid);
+       const index = activeAsteroids.indexOf(asteroid);
           if (index > -1) {
               activeAsteroids.splice(index, 1);
       }
@@ -480,27 +409,20 @@ function animate(time) {
 
       const shipSize = ship.scale ? ship.scale.x : 1.0;
       createShipExplosion(scene, camera, ship.position.clone(), ship, shipSize);
-      // Segna il sistema come finito
       setExplosionGameEnded(true);
-      //cameraController.setFollowSpeed(0);
+      
       cameraController.enabled = false;
       setTimeout(() => {
         endGame();
-      }, 2500);  // 2500ms = 2.5 secondi di esplosione
-
-      // Impedisci ulteriori collisioni e azioni dopo che il gioco è finito
-      
+      }, 2500);  
   }
 
   const secondsLeft = timer.getRemainingTime();
-  //debugHUD.setTimer(secondsLeft);
-  gameHUD.updateTimer(secondsLeft); // <-- AGGIORNAMENTO HUD
+  gameHUD.updateTimer(secondsLeft);
 
   if (timer.isExpired()) {
-    endGame(); // TODO: implementa endGame
+    endGame(); 
   }
-
-
-  // Render finale
+  
   renderer.render(scene, camera);
 }

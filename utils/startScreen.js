@@ -1,4 +1,3 @@
-// StartScreen.js
 export class StartScreen {
     constructor() {
         this.overlay = null;
@@ -382,7 +381,6 @@ export class StartScreen {
     }
 
     createOverlay() {
-        // Overlay principale con sfondo molto trasparente
         this.overlay = document.createElement('div');
         this.overlay.id = 'start-screen';
         this.overlay.style.cssText = `
@@ -403,11 +401,9 @@ export class StartScreen {
             box-sizing: border-box;
         `;
 
-        // Container principale
         const mainContainer = document.createElement('div');
         mainContainer.className = 'main-container';
 
-        // Sezione logo e titolo
         const logoSection = document.createElement('div');
         logoSection.className = 'logo-section';
         
@@ -436,11 +432,9 @@ export class StartScreen {
         logoSection.appendChild(gameTitle);
         logoSection.appendChild(gameSubtitle);
 
-        // Flusso di contenuti
         const contentFlow = document.createElement('div');
         contentFlow.className = 'content-flow';
 
-        // Missione brief
         const missionBrief = document.createElement('div');
         missionBrief.className = 'mission-brief';
         missionBrief.innerHTML = `
@@ -467,7 +461,6 @@ export class StartScreen {
             </div>
         `;
 
-        // Controlli
         const controlsInfo = document.createElement('div');
         controlsInfo.className = 'controls-info';
         controlsInfo.innerHTML = `
@@ -486,7 +479,6 @@ export class StartScreen {
         contentFlow.appendChild(missionBrief);
         contentFlow.appendChild(controlsInfo);
 
-        // Sezione di lancio
         const launchSection = document.createElement('div');
         launchSection.className = 'launch-section';
         
@@ -496,17 +488,14 @@ export class StartScreen {
         
         launchSection.appendChild(countdownWarning);
 
-        // Assembla tutto
         mainContainer.appendChild(logoSection);
         mainContainer.appendChild(contentFlow);
         mainContainer.appendChild(launchSection);
 
-        // Istruzioni di avvio centrate sotto il menu
         const startInstruction = document.createElement('div');
         startInstruction.className = 'start-instruction';
         startInstruction.textContent = 'Press SPACE to Start';
 
-        // Aggiungi tutto all'overlay
         this.overlay.appendChild(mainContainer);
         this.overlay.appendChild(startInstruction);
         
@@ -517,14 +506,12 @@ export class StartScreen {
         this.isActive = true;
         this.onStartCallback = onStartCallback;
         this.overlay.style.display = 'flex';
-        
-        // Nascondi l'HUD del gioco se è visibile
+
         const hudElement = document.getElementById('game-hud');
         if (hudElement) {
             hudElement.style.display = 'none';
         }
-        
-        // Aggiungi listener per la barra spaziatrice
+
         this.keyListener = (e) => {
             if (e.code === 'Space' && this.isActive) {
                 e.preventDefault();
@@ -544,13 +531,11 @@ export class StartScreen {
             this.overlay.style.display = 'none';
         }
         
-        // Rimuovi listener
         if (this.keyListener) {
             window.removeEventListener('keydown', this.keyListener);
             this.keyListener = null;
         }
-        
-        // Mostra l'HUD del gioco
+
         const hudElement = document.getElementById('game-hud');
         if (hudElement) {
             hudElement.style.display = 'block';
@@ -563,7 +548,6 @@ export class StartScreen {
             this.overlay.parentNode.removeChild(this.overlay);
         }
         
-        // Rimuovi gli stili se necessario
         const existingStyle = document.querySelector('style[data-start-screen]');
         if (existingStyle) {
             existingStyle.remove();

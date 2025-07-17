@@ -53,10 +53,8 @@ export class SolarStorm {
     scene.remove(this.visual);
   }
   update(delta) {
-    // Esempio: rotazione lenta dell'intero gruppo
     this.visual.rotation.y += 0.05 * delta;
 
-    // Animazione leggera dei singoli sprite (facoltativa)
     this.visual.children.forEach(sprite => {
         sprite.material.opacity += (Math.random() - 0.5) * 0.005;
         sprite.material.opacity = THREE.MathUtils.clamp(sprite.material.opacity, 0.05, 0.25);
@@ -76,13 +74,12 @@ export class SolarStormManager {
   }
 
   update(delta, timeElapsed) {
-    // Crea nuove tempeste
+
     if (timeElapsed - this.lastSpawnTime >= this.spawnInterval && this.storms.length < this.maxStorms) {
       this.spawnRandomStorm();
       this.lastSpawnTime = timeElapsed;
     }
-
-    // Aggiorna e rimuove quelle vecchie
+    
     this.storms = this.storms.filter(storm => {
       storm.update(delta);
       const age = timeElapsed - storm.spawnTime;

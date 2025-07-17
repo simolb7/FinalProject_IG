@@ -4,11 +4,10 @@ let isShipExploding = false;
 
 export class CollisionSystem {
      constructor() {
-        this.collisionDistance = 20; // Distanza minima per collisione (aumentata)
-        this.asteroidCollisionDistance = 30;
+        this.collisionDistance = 30; 
+        this.asteroidCollisionDistance = 15;
     }
 
-    // Calcola la distanza tra due oggetti 3D
     calculateDistance(object1, object2) {
         if (!object1 || !object2 || !object1.position || !object2.position) {
             return Infinity;
@@ -17,13 +16,12 @@ export class CollisionSystem {
         return object1.position.distanceTo(object2.position);
     }
 
-    // Verifica collisione tra due oggetti
+
     checkCollision(object1, object2) {
         const distance = this.calculateDistance(object1, object2);
         return distance < this.collisionDistance;
     }
 
-    // Controlla le collisioni tra la navicella e gli astronauti
     checkShipAstronautCollisions(ship, astronauts) {
         if (!ship || !astronauts) return [];
 
@@ -45,26 +43,22 @@ export class CollisionSystem {
         astronaut.shrinking = true;
         const originalScale = astronaut.scale.clone();
         const startTime = Date.now();
-        const duration = 150; // 1 secondo
-        
-        // Calcola il punto di collisione (punto medio tra astronauta e navicella)
+        const duration = 150; 
+
         const collisionPoint = new THREE.Vector3().addVectors(
             astronaut.position,
             ship.position
         ).multiplyScalar(0.5);
-        
-        // Sposta l'astronauta verso il punto di collisione durante l'animazione
+
         const originalPosition = astronaut.position.clone();
         
         const animate = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Riduce la scala
             const scale = originalScale.clone().multiplyScalar(1 - progress);
             astronaut.scale.copy(scale);
             
-            // Sposta verso il punto di collisione
             astronaut.position.lerpVectors(originalPosition, collisionPoint, progress);
             
             if (progress < 1) {
@@ -84,7 +78,6 @@ export class CollisionSystem {
         
         for (let i = 0; i < asteroids.length; i++) {
             const asteroid = asteroids[i];
-            // Gli asteroidi hanno una proprietà mesh che contiene il Group
             const asteroidMesh = asteroid.mesh;
             if (this.checkCollision(ship, asteroidMesh, this.asteroidCollisionDistance)) {
                 collisions.push(asteroid);
@@ -95,47 +88,8 @@ export class CollisionSystem {
     }
 
         
-
-    explosdeShip(ship, scene) {
-        console.log("🟡 explodeShip - INIZIO");
-
-        if (!ship) {
-            console.error("❌ Nave non definita");
-            return;
-        }
-        
-        if (isShipExploding) {
-            console.warn("⚠️ Nave già in esplosione");
-            return;
-        }
-
-        isShipExploding = true;
-
-        const center = ship.position.clone();
-        console.log("📍 Posizione esplosione:", center);
-
-        ship.visible = false;
-        console.log("🚫 Nave nascosta");
-
-        const geometry = new THREE.SphereGeometry(0.5, 16, 16);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const debugSphere = new THREE.Mesh(geometry, material);
-        debugSphere.position.copy(center);
-        scene.add(debugSphere);
-        console.log("🔴 Sfera rossa aggiunta");
-
-        setTimeout(() => {
-            scene.remove(debugSphere);
-            console.log("🧹 Sfera rimossa");
-        }, 2000);
-    }
-
-
-    // Aggiungi queste funzioni alla tua classe CollisionSystem
-
 }
 
-// Classe per interpolazione di valori
 class Spline {
     constructor() {
         this.points = [];
@@ -184,7 +138,6 @@ class Spline {
     }
 }
 
-// Classe per interpolazione di colori
 class ColorSpline {
     constructor() {
         this.points = [];
@@ -233,7 +186,6 @@ class ColorSpline {
     }
 }
 
-// Sistema di particelle avanzato
 class ParticleSystem {
     constructor(scene, camera) {
         this.scene = scene;
@@ -245,16 +197,12 @@ class ParticleSystem {
     createMaterials() {
         const materials = {};
         
-        // Materiale per il fuoco/esplosione
         materials.fire = this.createFireMaterial();
-        
-        // Materiale per il fumo
+ 
         materials.smoke = this.createSmokeMaterial();
         
-        // Materiale per le scintille
         materials.spark = this.createSparkMaterial();
-        
-        // Materiale per i detriti
+
         materials.debris = this.createDebrisMaterial();
         
         return materials;
@@ -265,8 +213,7 @@ class ParticleSystem {
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        
-        // Crea un cerchio con gradiente per il fuoco
+ 
         const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
         gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
@@ -292,8 +239,7 @@ class ParticleSystem {
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        
-        // Crea una texture di fumo più complessa
+
         const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
         gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
@@ -303,7 +249,6 @@ class ParticleSystem {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 64, 64);
         
-        // Aggiungi rumore per rendere il fumo più realistico
         const imageData = ctx.getImageData(0, 0, 64, 64);
         const data = imageData.data;
         
@@ -330,7 +275,6 @@ class ParticleSystem {
         canvas.height = 32;
         const ctx = canvas.getContext('2d');
         
-        // Crea una stella per le scintille
         ctx.fillStyle = 'rgba(255, 255, 255, 1)';
         ctx.beginPath();
         ctx.arc(16, 16, 2, 0, Math.PI * 2);
@@ -352,7 +296,6 @@ class ParticleSystem {
         canvas.height = 8;
         const ctx = canvas.getContext('2d');
         
-        // Crea un piccolo punto per i detriti
         ctx.fillStyle = 'rgba(255, 255, 255, 1)';
         ctx.fillRect(2, 2, 4, 4);
         
@@ -388,7 +331,7 @@ class ParticleSystem {
     }
 }
 
-// Emettitore di particelle migliorato
+
 class ParticleEmitter {
     constructor(origin, particleSystem, type = 'fire') {
         this.origin = origin.clone();
@@ -467,14 +410,12 @@ class ParticleEmitter {
 createParticle() {
         const life = this.lifeRange[0] + Math.random() * (this.lifeRange[1] - this.lifeRange[0]);
         
-        // Posizione MOLTO irregolare - simula frammentazione realistica
         const randomMethod = Math.random();
         let p;
         
         if (randomMethod < 0.2) {
-            // Distribuzione a "jet" - come se esplosioni interne creassero getti
             const jetAngle = Math.random() * Math.PI * 2;
-            const jetLength = Math.pow(Math.random(), 0.3) * this.spreadRadius * 3; // Alcuni molto lontani
+            const jetLength = Math.pow(Math.random(), 0.3) * this.spreadRadius * 3; 
             const jetWidth = Math.random() * this.spreadRadius * 0.2;
             
             p = new THREE.Vector3(
@@ -483,7 +424,6 @@ createParticle() {
                 Math.sin(jetAngle) * jetLength + (Math.random() - 0.5) * jetWidth
             );
         } else if (randomMethod < 0.4) {
-            // Distribuzione a "nuvola irregolare" - gruppi densi casuali
             const cloudCenters = [
                 new THREE.Vector3(Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0, 0),
                 new THREE.Vector3(0, Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0),
@@ -500,7 +440,6 @@ createParticle() {
                 Math.sin(cloudAngle) * cloudRadius
             ));
         } else if (randomMethod < 0.6) {
-            // Distribuzione "a spirale frammentata" - come se rotasse durante l'esplosione
             const spiralAngle = Math.random() * Math.PI * 4; // Più giri
             const spiralRadius = Math.pow(Math.random(), 1.2) * this.spreadRadius * 1.5;
             const spiralHeight = Math.sin(spiralAngle * 0.5) * this.spreadRadius * 0.7;
@@ -511,14 +450,12 @@ createParticle() {
                 Math.sin(spiralAngle) * spiralRadius + (Math.random() - 0.5) * this.spreadRadius * 0.5
             );
         } else {
-            // Distribuzione "a frammenti volanti" - completamente caotica
             const fragmentVector = new THREE.Vector3(
                 (Math.random() - 0.5) * this.spreadRadius * 4,
                 (Math.random() - 0.5) * this.spreadRadius * 3,
                 (Math.random() - 0.5) * this.spreadRadius * 4
             );
             
-            // Applica distorsione non-lineare
             fragmentVector.x *= Math.pow(Math.abs(fragmentVector.x / this.spreadRadius), 0.7);
             fragmentVector.y *= Math.pow(Math.abs(fragmentVector.y / this.spreadRadius), 0.8);
             fragmentVector.z *= Math.pow(Math.abs(fragmentVector.z / this.spreadRadius), 0.7);
@@ -528,24 +465,20 @@ createParticle() {
         
         p.add(this.origin);
         
-        // Velocità MOLTO più caotica e realistica
         let direction;
         const velocityStyle = Math.random();
         
         if (velocityStyle < 0.25) {
-            // Velocità "esplosiva" - completamente casuale ma con bias esplosivo
             direction = new THREE.Vector3(
                 (Math.random() - 0.5) * 3,
                 (Math.random() - 0.5) * 3,
                 (Math.random() - 0.5) * 3
             );
             
-            // Aggiungi bias esplosivo verso l'esterno
             const explosiveForce = p.clone().sub(this.origin).normalize().multiplyScalar(0.5);
             direction.add(explosiveForce);
             direction.normalize();
         } else if (velocityStyle < 0.5) {
-            // Velocità "a vortice" - come se ci fossero correnti d'aria
             const vortexAxis = new THREE.Vector3(0, 1, 0);
             const positionFromCenter = p.clone().sub(this.origin);
             const tangential = positionFromCenter.clone().cross(vortexAxis).normalize();
@@ -559,7 +492,6 @@ createParticle() {
             ));
             direction.normalize();
         } else if (velocityStyle < 0.75) {
-            // Velocità "a onde d'urto" - multiple direzioni esplosive
             const shockWaves = [
                 new THREE.Vector3(1, 0.3, 0.2),
                 new THREE.Vector3(-0.8, 0.5, 0.3),
@@ -570,7 +502,6 @@ createParticle() {
             const selectedWave = shockWaves[Math.floor(Math.random() * shockWaves.length)];
             direction = selectedWave.clone().normalize();
             
-            // Aggiungi variazione casuale molto forte
             direction.add(new THREE.Vector3(
                 (Math.random() - 0.5) * 1.8,
                 (Math.random() - 0.5) * 1.8,
@@ -578,7 +509,6 @@ createParticle() {
             ));
             direction.normalize();
         } else {
-            // Velocità "frammentazione" - come se pezzi volassero in direzioni specifiche
             const fragmentDirections = [
                 new THREE.Vector3(1, 0, 0),
                 new THREE.Vector3(-1, 0, 0),
@@ -590,21 +520,18 @@ createParticle() {
             
             const baseDirection = fragmentDirections[Math.floor(Math.random() * fragmentDirections.length)];
             
-            // Aggiungi MOLTA variazione alla direzione base
             direction = baseDirection.clone().add(new THREE.Vector3(
                 (Math.random() - 0.5) * 2.5,
                 (Math.random() - 0.5) * 2.5,
                 (Math.random() - 0.5) * 2.5
             )).normalize();
         }
-        
-        // Velocità MOLTO più variabile e realistica
-        const speedVariation = Math.pow(Math.random(), 0.6); // Distribuzione non-lineare
-        const speedMultiplier = 0.1 + speedVariation * 2.0; // Da 10% a 210% della velocità base
+
+        const speedVariation = Math.pow(Math.random(), 0.6); 
+        const speedMultiplier = 0.1 + speedVariation * 2.0; 
         const speed = (this.speedRange[0] + Math.random() * (this.speedRange[1] - this.speedRange[0])) * speedMultiplier;
         direction.multiplyScalar(speed);
 
-        // Crea sprite
         const sprite = new THREE.Sprite(this.material.clone());
         sprite.position.copy(p);
         this.particleSystem.scene.add(sprite);
@@ -613,11 +540,11 @@ createParticle() {
             sprite: sprite,
             position: p,
             velocity: direction,
-            size: (Math.random() * 0.8 + 0.2) * this.baseSize, // Più variazione nella dimensione
+            size: (Math.random() * 0.8 + 0.2) * this.baseSize, 
             life: life,
             maxLife: life,
             rotation: Math.random() * 2.0 * Math.PI,
-            rotationSpeed: (Math.random() - 0.5) * 15, // Rotazione più veloce
+            rotationSpeed: (Math.random() - 0.5) * 15,
             active: true
         };
     }
@@ -642,12 +569,10 @@ createParticle() {
                 continue;
             }
             
-            // Aggiorna fisica
             particle.velocity.add(this.gravity.clone().multiplyScalar(deltaTime));
             particle.velocity.multiplyScalar(this.drag);
             
-            // Turbolenza più intensa e variabile
-            const turbulenceIntensity = 1.0 + Math.sin(this.timer * 3) * 0.5; // Turbolenza che varia nel tempo
+            const turbulenceIntensity = 1.0 + Math.sin(this.timer * 3) * 0.5; 
             const turbulence = new THREE.Vector3(
                 (Math.random() - 0.5) * this.turbulenceStrength * turbulenceIntensity,
                 (Math.random() - 0.5) * this.turbulenceStrength * turbulenceIntensity,
@@ -655,18 +580,14 @@ createParticle() {
             );
             particle.velocity.add(turbulence.multiplyScalar(deltaTime));
             
-            // Aggiorna posizione
             particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
             particle.sprite.position.copy(particle.position);
             
-            // Aggiorna rotazione
             particle.rotation += particle.rotationSpeed * deltaTime;
             particle.sprite.material.rotation = particle.rotation;
             
-            // Calcola progresso vita
             const lifeProgress = 1.0 - (particle.life / particle.maxLife);
             
-            // Applica animazioni dalle spline
             const alpha = this.alphaSpline.evaluate(lifeProgress);
             const color = this.colorSpline.evaluate(lifeProgress);
             const size = this.sizeSpline.evaluate(lifeProgress);
@@ -693,7 +614,6 @@ createParticle() {
     }
 }
 
-// Sistema di esplosione principale migliorato
 class ShipExplosionSystem {
     constructor(scene, camera) {
         this.scene = scene;
@@ -711,7 +631,7 @@ class ShipExplosionSystem {
             timer: 0,
             duration: 8.0,
             active: true,
-            phase: 0 // 0: iniziale, 1: espansione, 2: fumo
+            phase: 0 
         };
 
         this.createInitialBlast(position, shipSize);
@@ -725,7 +645,6 @@ class ShipExplosionSystem {
     }
 
     createInitialBlast(position, shipSize) {
-        // Esplosione iniziale molto rapida e intensa ma più irregolare
         const emitter = new ParticleEmitter(position, this.particleSystem, 'fire');
         
         emitter.alphaSpline.addPoint(0.0, 0.0);
@@ -745,17 +664,15 @@ class ShipExplosionSystem {
         emitter.sizeSpline.addPoint(1.0, 0.5 * shipSize, 'ease-in');
         
         emitter.baseSize *= shipSize;
-        emitter.spreadRadius *= shipSize * 0.5; // Spread maggiore per più caos
-        emitter.turbulenceStrength *= 1.5; // Più turbolenza
-        emitter.addParticles(200); // Meno particelle ma più caotiche
+        emitter.spreadRadius *= shipSize * 0.5; 
+        emitter.turbulenceStrength *= 1.5; 
+        emitter.addParticles(200); 
         
         this.particleSystem.addEmitter(emitter);
     }
 
     createFireEmitters(position, shipSize) {
-        // Emettitori di fuoco più sparsi e casuali
         for (let i = 0; i < 6; i++) {
-            // Offset più casuali e asimmetrici
             const angle = Math.random() * Math.PI * 2;
             const distance = (Math.random() * 0.7 + 0.3) * 15 * shipSize;
             const height = (Math.random() - 0.5) * 12 * shipSize;
@@ -767,7 +684,7 @@ class ShipExplosionSystem {
             );
             
             const emitter = new ParticleEmitter(position.clone().add(offset), this.particleSystem, 'fire');
-            emitter.delay = Math.random() * 0.8; // Delay più casuali
+            emitter.delay = Math.random() * 0.8; 
             
             emitter.alphaSpline.addPoint(0.0, 0.0);
             emitter.alphaSpline.addPoint(0.1, 0.9, 'ease-out');
@@ -787,14 +704,13 @@ class ShipExplosionSystem {
             emitter.baseSize *= shipSize;
             emitter.spreadRadius *= shipSize * 1.2;
             emitter.turbulenceStrength *= 1.3;
-            emitter.addParticles(Math.floor(80 + Math.random() * 40)); // Numero variabile di particelle
+            emitter.addParticles(Math.floor(80 + Math.random() * 40));
             
             this.particleSystem.addEmitter(emitter);
         }
     }
 
     createSmokeEmitters(position, shipSize) {
-        // Emettitori di fumo più dispersi
         for (let i = 0; i < 4; i++) {
             const angle = Math.random() * Math.PI * 2;
             const distance = Math.random() * 12 * shipSize;
@@ -831,7 +747,6 @@ class ShipExplosionSystem {
     }
 
     createSparkEmitters(position, shipSize) {
-        // Scintille molto più caotiche
         for (let i = 0; i < 3; i++) {
             const randomOffset = new THREE.Vector3(
                 (Math.random() - 0.5) * 8 * shipSize,
@@ -856,7 +771,7 @@ class ShipExplosionSystem {
             
             emitter.baseSize *= shipSize;
             emitter.spreadRadius *= shipSize * 0.8;
-            emitter.turbulenceStrength *= 2.0; // Molto più turbolenza per le scintille
+            emitter.turbulenceStrength *= 2.0;
             emitter.addParticles(Math.floor(50 + Math.random() * 40));
             
             this.particleSystem.addEmitter(emitter);
@@ -864,7 +779,6 @@ class ShipExplosionSystem {
     }
 
     createDebrisEmitters(position, shipSize) {
-        // Detriti molto più dispersi
         for (let i = 0; i < 2; i++) {
             const randomOffset = new THREE.Vector3(
                 (Math.random() - 0.5) * 6 * shipSize,
@@ -918,19 +832,15 @@ class ShipExplosionSystem {
     }
 }
 
-// Funzioni di utilità migliorate
 export function createShipExplosion(scene, camera, shipPosition, ship, shipSize = 1.0) {
-    // Crea il sistema se non esiste
     if (!window.explosionSystem) {
         window.explosionSystem = new ShipExplosionSystem(scene, camera);
     }
     
-    // Nascondi la navicella
     if (ship) {
         ship.visible = false;
     }
     
-    // Crea l'esplosione
     const explosion = window.explosionSystem.createExplosion(shipPosition, shipSize);
     
     return explosion;

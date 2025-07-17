@@ -26,7 +26,7 @@ export class GameTimer {
     if (!this.running || this.startTime === null) return 0;
     
     const elapsed = (performance.now() - this.startTime) / 1000;
-    return elapsed; // Restituisce il tempo preciso senza arrotondamenti
+    return elapsed; 
   }
 
   isExpired() {
