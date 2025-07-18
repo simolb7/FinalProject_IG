@@ -3,12 +3,11 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/
 import { ShipController } from './utils/ShipController.js';
 import { CameraController } from './utils/CameraController.js';
 import { createStarfield} from './utils/starfield.js';
-import {  updateAsteroidField  } from './utils/sceneObjects.js';
 import { GameTimer } from './utils/GameTimer.js';
 import { SolarStormManager } from './utils/solarStorms.js';
 import { GameHUD } from './utils/gameHUD.js';
 import { Thruster } from './utils/Thruster.js';
-import {  initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids} from './utils/sceneObjects.js';
+import { updateAsteroidField, initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids, createMarsBackground, updateMarsBackground} from './utils/sceneObjects.js';
 import { CollisionSystem, createShipExplosion, updateExplosions, destroyExplosionSystem, setExplosionGameEnded } from './utils/CollisionSystem.js';
 import { StartScreen } from './utils/startScreen.js';
 
@@ -23,8 +22,8 @@ let gameInitialized = false;
 const dropRates = [0.4, 0.4, 0.2]; 
 const playerDirection = new THREE.Vector3(); 
 let asteroidModels = []; 
-let marsObject;
 const collisionSystem = new CollisionSystem();
+let mars
 let score = 0;
 const keys = {};
 let gameOver = false;
@@ -49,7 +48,7 @@ async function init() {
 
   starfield = await createStarfield(scene);
 
-  createMarsBackground();
+  mars = await createMarsBackground(scene);
   setupDynamicLighting();
   const { ship: loadedShip, thrusterL, thrusterR } = await loadSpaceship();
   ship = loadedShip;
@@ -103,54 +102,7 @@ function startGame() {
   
   gameHUD.show();
 }
-function createMarsBackground() {
-    const marsGeometry = new THREE.SphereGeometry(350, 64, 32);
-    
-    const textureLoader = new THREE.TextureLoader();
-    const marsTexture = textureLoader.load(
-        'assets/models/texture/space/8k_mars.jpg',
-        (texture) => {
-            console.log('Texture Mars NASA caricata con successo');
-        },
-        undefined,
-        (error) => {
-            console.log('Errore caricamento texture Mars NASA:', error);
-        }
-    );
-    
-    const marsMaterial = new THREE.MeshStandardMaterial({
-        map: marsTexture,
-        emissive: 0x331100, 
-        emissiveIntensity: 0.1,
-        roughness: 0.8,
-        metalness: 0.1
-    });
-    
-    marsObject = new THREE.Mesh(marsGeometry, marsMaterial);
-    
-    
-    marsObject.userData.relativePosition = new THREE.Vector3(-500, -100, 400);
-    
-    marsObject.rotation.x = Math.random() * Math.PI;
-    marsObject.rotation.y = Math.random() * Math.PI;
-    marsObject.rotationSpeed = { x: 0.00000001, y: 0.00000003, z: 0.0000001 };  
-    
-    scene.add(marsObject);
-  
-    return marsObject;
-}
 
-function updateMarsBackground() {
-    if (!marsObject || !camera) return;
-    
-    const relativePos = marsObject.userData.relativePosition;
-    marsObject.position.copy(camera.position).add(relativePos);
-    
-    marsObject.rotation.x += marsObject.rotationSpeed.x;
-    marsObject.rotation.y += marsObject.rotationSpeed.y;
-    marsObject.rotation.z += marsObject.rotationSpeed.z;
-    
-}
 async function loadSpaceship() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
@@ -339,7 +291,7 @@ function animate(time) {
   cameraController.update(delta);
 
   updateDynamicLighting();
-  updateMarsBackground();
+  updateMarsBackground(mars, camera);
 
   if (starfield) {
     starfield.position.copy(camera.position);

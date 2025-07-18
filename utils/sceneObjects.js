@@ -11,6 +11,7 @@ let lastSpawnTime = 0;
 let modelTemplate = null; 
 let isModelLoaded = false;
 let asteroidIdCounter = 0;
+let marsObject;
 
 const SPAWN_CONFIG = {
     spawnRadius: {min: 10, max: 30},           
@@ -145,6 +146,56 @@ function createRandomAsteroidInFront(center, direction, models, dropRates, radiu
       (Math.random() - 0.5) * 0.02
     )
   };
+}
+
+
+export function createMarsBackground(scene) {
+    const marsGeometry = new THREE.SphereGeometry(350, 64, 32);
+    
+    const textureLoader = new THREE.TextureLoader();
+    const marsTexture = textureLoader.load(
+        'assets/models/texture/space/8k_mars.jpg',
+        (texture) => {
+            console.log('Texture Mars NASA caricata con successo');
+        },
+        undefined,
+        (error) => {
+            console.log('Errore caricamento texture Mars NASA:', error);
+        }
+    );
+    
+    const marsMaterial = new THREE.MeshStandardMaterial({
+        map: marsTexture,
+        emissive: 0x331100, 
+        emissiveIntensity: 0.1,
+        roughness: 0.8,
+        metalness: 0.1
+    });
+    
+    marsObject = new THREE.Mesh(marsGeometry, marsMaterial);
+    
+    
+    marsObject.userData.relativePosition = new THREE.Vector3(-500, -100, 400);
+    
+    marsObject.rotation.x = Math.random() * Math.PI;
+    marsObject.rotation.y = Math.random() * Math.PI;
+    marsObject.rotationSpeed = { x: 0.00000001, y: 0.00000003, z: 0.0000001 };  
+    
+    scene.add(marsObject);
+  
+    return marsObject;
+}
+
+export function updateMarsBackground(marsObject, camera) {
+    if (!marsObject || !camera) return;
+    
+    const relativePos = marsObject.userData.relativePosition;
+    marsObject.position.copy(camera.position).add(relativePos);
+    
+    marsObject.rotation.x += marsObject.rotationSpeed.x;
+    marsObject.rotation.y += marsObject.rotationSpeed.y;
+    marsObject.rotation.z += marsObject.rotationSpeed.z;
+    
 }
 
 
