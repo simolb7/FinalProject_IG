@@ -92,32 +92,4 @@ export class CameraController {
   setFollowSpeed(speed) {
     this.followSpeed = THREE.MathUtils.clamp(speed, 0.01, 1.0);
   }
-
-  shake(intensity = 1, duration = 1000) {
-    const startTime = Date.now();
-    const originalOffset = this.offset.clone();
-    
-    const shakeEffect = () => {
-      const elapsed = Date.now() - startTime;
-      if (elapsed > duration) {
-        this.offset.copy(originalOffset);
-        return;
-      }
-      
-      const progress = elapsed / duration;
-      const currentIntensity = intensity * (1 - progress);
-      
-      this.offset.copy(originalOffset).add(
-        new THREE.Vector3(
-          (Math.random() - 0.5) * currentIntensity,
-          (Math.random() - 0.5) * currentIntensity,
-          (Math.random() - 0.5) * currentIntensity
-        )
-      );
-      
-      requestAnimationFrame(shakeEffect);
-    };
-    
-    shakeEffect();
-  }
 }

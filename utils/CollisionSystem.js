@@ -2,12 +2,18 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 
 let isShipExploding = false;
 
+/**
+ * CollisionSystem handles collision detection between game objects in particular it
+ * manages ship-astronaut and ship-asteroid collision detection with different collision radius
+ */
 export class CollisionSystem {
      constructor() {
-        this.collisionDistance = 30; 
-        this.asteroidCollisionDistance = 15;
+        this.collisionDistance = 25; 
+        this.asteroidCollisionDistance = 20;
     }
-
+    /**
+     * Calculates the 3D distance between two objects with position vectors
+     */
     calculateDistance(object1, object2) {
         if (!object1 || !object2 || !object1.position || !object2.position) {
             return Infinity;
@@ -16,12 +22,16 @@ export class CollisionSystem {
         return object1.position.distanceTo(object2.position);
     }
 
-
+    /**
+     * Checks if two objects are colliding based on default collision distance
+     */
     checkCollision(object1, object2) {
         const distance = this.calculateDistance(object1, object2);
         return distance < this.collisionDistance;
     }
-
+    /**
+     * Checks collisions between ship and astronauts
+     */
     checkShipAstronautCollisions(ship, astronauts) {
         if (!ship || !astronauts) return [];
 
@@ -36,14 +46,18 @@ export class CollisionSystem {
 
         return collisions;
     }
-
+    /**
+     * Animates an astronaut shrinking and moving toward collision point before removal
+     * Creates a smooth animation when astronaut is picked up
+     */
     shrinkAstronaut(astronaut, scene, ship) {
         if (!astronaut || astronaut.shrinking) return;
         
+        // Prevent multiple shrinking animations on same astronaut
         astronaut.shrinking = true;
         const originalScale = astronaut.scale.clone();
         const startTime = Date.now();
-        const duration = 150; 
+        const duration = 175; 
 
         const collisionPoint = new THREE.Vector3().addVectors(
             astronaut.position,
@@ -56,6 +70,7 @@ export class CollisionSystem {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
+            // Scale down astronaut proportionally to animation progress
             const scale = originalScale.clone().multiplyScalar(1 - progress);
             astronaut.scale.copy(scale);
             
@@ -71,6 +86,10 @@ export class CollisionSystem {
         animate();
     }
 
+    /**
+     * Checks collisions between ship and multiple asteroids
+     * Uses smaller collision distance for more precise asteroid collision detection
+     */
     checkShipAsteroidCollisions(ship, asteroids) {
         if (!ship || !asteroids) return [];
 
@@ -90,6 +109,17 @@ export class CollisionSystem {
         
 }
 
+
+/**
+ * Spline class for creating smooth value interpolation over time
+ * Supports different easing functions for natural animation curves
+ * in order to create smooth transitions between particle states
+ * 
+ * linear: Cambio costante
+ * ease-in: Inizia lento, accelera
+ * ease-out: Inizia veloce, rallenta
+ * ease-in-out: Lento-veloce-lento
+ */
 class Spline {
     constructor() {
         this.points = [];
@@ -99,7 +129,9 @@ class Spline {
         this.points.push({ t, value, easing });
         this.points.sort((a, b) => a.t - b.t);
     }
-
+    /**
+     * Evaluates the spline at a given time, returning interpolated value
+     */
     evaluate(t) {
         if (this.points.length === 0) return 0;
         if (this.points.length === 1) return this.points[0].value;
@@ -120,10 +152,13 @@ class Spline {
         
         const localT = (t - p1.t) / (p2.t - p1.t);
         const easedT = this.applyEasing(localT, p1.easing);
-        
+
+        // Linear interpolation with easing applied
         return p1.value + (p2.value - p1.value) * easedT;
     }
-
+    /**
+     * Applies easing function to a normalized time value
+     */
     applyEasing(t, easing) {
         switch (easing) {
             case 'ease-in':
@@ -138,6 +173,10 @@ class Spline {
     }
 }
 
+/**
+ * ColorSpline class for interpolating between THREE.Color objects over time
+ * Similar to Spline but handles color interpolation with easing
+ */
 class ColorSpline {
     constructor() {
         this.points = [];
@@ -168,10 +207,13 @@ class ColorSpline {
         
         const localT = (t - p1.t) / (p2.t - p1.t);
         const easedT = this.applyEasing(localT, p1.easing);
-        
+
+        // Use THREE.Color's lerp method for smooth color interpolation
         return p1.color.clone().lerp(p2.color, easedT);
     }
-
+    /**
+     * Applies easing function to a normalized time value (same as Spline)
+     */
     applyEasing(t, easing) {
         switch (easing) {
             case 'ease-in':
@@ -186,6 +228,10 @@ class ColorSpline {
     }
 }
 
+/**
+ * ParticleSystem manages multiple particle emitters and their materials
+ * Handling creation, updating, and cleanup of particle effects
+ */
 class ParticleSystem {
     constructor(scene, camera) {
         this.scene = scene;
@@ -193,7 +239,10 @@ class ParticleSystem {
         this.emitters = [];
         this.materials = this.createMaterials();
     }
-
+    /**
+     * Creates and returns all particle material types used by the system
+     * Each material is optimized for different particle types (fire, smoke, sparks, debris)
+     */
     createMaterials() {
         const materials = {};
         
@@ -207,13 +256,17 @@ class ParticleSystem {
         
         return materials;
     }
-
+    /**
+     * Creates a fire particle material with bright, additive blending
+     * Uses radial gradient for realistic fire particle appearance
+     */
     createFireMaterial() {
         const canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
- 
+
+         // Create radial gradient from bright center to transparent edges
         const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
         gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
@@ -225,7 +278,8 @@ class ParticleSystem {
         ctx.fillRect(0, 0, 64, 64);
         
         const texture = new THREE.CanvasTexture(canvas);
-        
+
+        // Additive blending makes fire particles glow and blend realistically
         return new THREE.SpriteMaterial({
             map: texture,
             blending: THREE.AdditiveBlending,
@@ -234,12 +288,16 @@ class ParticleSystem {
         });
     }
 
+    /**
+     * Creates a smoke particle material with noise texture
+     * Uses normal blending for realistic smoke appearance
+     */
     createSmokeMaterial() {
         const canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-
+        // Create base radial gradient
         const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
         gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
@@ -248,7 +306,7 @@ class ParticleSystem {
         
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 64, 64);
-        
+        // Add noise to make smoke look more realistic
         const imageData = ctx.getImageData(0, 0, 64, 64);
         const data = imageData.data;
         
@@ -269,12 +327,16 @@ class ParticleSystem {
         });
     }
 
+    /**
+     * Creates a spark particle material for bright, small particles
+     * Simple circular shape with additive blending
+     */
     createSparkMaterial() {
         const canvas = document.createElement('canvas');
         canvas.width = 32;
         canvas.height = 32;
         const ctx = canvas.getContext('2d');
-        
+        // Simple white circle for spark effect      
         ctx.fillStyle = 'rgba(255, 255, 255, 1)';
         ctx.beginPath();
         ctx.arc(16, 16, 2, 0, Math.PI * 2);
@@ -290,6 +352,9 @@ class ParticleSystem {
         });
     }
 
+    /**
+     * Creates a debris particle material 
+     */
     createDebrisMaterial() {
         const canvas = document.createElement('canvas');
         canvas.width = 8;
@@ -312,7 +377,10 @@ class ParticleSystem {
     addEmitter(emitter) {
         this.emitters.push(emitter);
     }
-
+    /**
+     * Updates all particle emitters and removes finished ones
+     * Called every frame to animate particles
+     */
     update(deltaTime) {
         for (let i = this.emitters.length - 1; i >= 0; i--) {
             const emitter = this.emitters[i];
@@ -331,7 +399,10 @@ class ParticleSystem {
     }
 }
 
-
+/**
+ * ParticleEmitter creates and manages individual particles of a specific type
+ * Handling particle creation, physics simulation, and lifecycle management
+ */
 class ParticleEmitter {
     constructor(origin, particleSystem, type = 'fire') {
         this.origin = origin.clone();
@@ -343,16 +414,19 @@ class ParticleEmitter {
         this.finished = false;
         this.active = true;
         
-        // Parametri specifici per tipo
+        // Configure emitter based on particle type
         this.setupTypeParameters();
         
-        // Spline per animazioni
+        // Splines for animating particle properties over lifetime
         this.alphaSpline = new Spline();
         this.colorSpline = new ColorSpline();
         this.sizeSpline = new Spline();
         this.velocitySpline = new Spline();
     }
-
+     /**
+     * Configures emitter parameters based on particle type
+     * each type has different physics properties and appearance
+     */
     setupTypeParameters() {
         switch(this.type) {
             case 'fire':
@@ -400,19 +474,24 @@ class ParticleEmitter {
                 break;
         }
     }
-
+    /**
+     * Creates a specified number of particles and adds them to the emitter
+     */
     addParticles(count) {
         for (let i = 0; i < count; i++) {
             this.particles.push(this.createParticle());
         }
     }
-
-createParticle() {
+    /**
+     * Creates a single particle with randomized properties
+     * Uses multiple distribution patterns for realistic explosion effects
+     */
+    createParticle() {
         const life = this.lifeRange[0] + Math.random() * (this.lifeRange[1] - this.lifeRange[0]);
         
         const randomMethod = Math.random();
         let p;
-        
+        // Different spawn patterns for variety in explosion shape
         if (randomMethod < 0.2) {
             const jetAngle = Math.random() * Math.PI * 2;
             const jetLength = Math.pow(Math.random(), 0.3) * this.spreadRadius * 3; 
@@ -424,6 +503,7 @@ createParticle() {
                 Math.sin(jetAngle) * jetLength + (Math.random() - 0.5) * jetWidth
             );
         } else if (randomMethod < 0.4) {
+            // Cloud pattern - clustered spawning
             const cloudCenters = [
                 new THREE.Vector3(Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0, 0),
                 new THREE.Vector3(0, Math.random() * this.spreadRadius * 2 - this.spreadRadius, 0),
@@ -440,6 +520,7 @@ createParticle() {
                 Math.sin(cloudAngle) * cloudRadius
             ));
         } else if (randomMethod < 0.6) {
+            // Spiral pattern - swirling effect
             const spiralAngle = Math.random() * Math.PI * 4; // Più giri
             const spiralRadius = Math.pow(Math.random(), 1.2) * this.spreadRadius * 1.5;
             const spiralHeight = Math.sin(spiralAngle * 0.5) * this.spreadRadius * 0.7;
@@ -450,12 +531,14 @@ createParticle() {
                 Math.sin(spiralAngle) * spiralRadius + (Math.random() - 0.5) * this.spreadRadius * 0.5
             );
         } else {
+            // Fragment pattern - scattered debris
             const fragmentVector = new THREE.Vector3(
                 (Math.random() - 0.5) * this.spreadRadius * 4,
                 (Math.random() - 0.5) * this.spreadRadius * 3,
                 (Math.random() - 0.5) * this.spreadRadius * 4
             );
             
+            // Apply non-linear scaling for more realistic distribution
             fragmentVector.x *= Math.pow(Math.abs(fragmentVector.x / this.spreadRadius), 0.7);
             fragmentVector.y *= Math.pow(Math.abs(fragmentVector.y / this.spreadRadius), 0.8);
             fragmentVector.z *= Math.pow(Math.abs(fragmentVector.z / this.spreadRadius), 0.7);
@@ -465,10 +548,12 @@ createParticle() {
         
         p.add(this.origin);
         
+        // Generate initial velocity with multiple patterns
         let direction;
         const velocityStyle = Math.random();
         
         if (velocityStyle < 0.25) {
+            // Explosive outward pattern
             direction = new THREE.Vector3(
                 (Math.random() - 0.5) * 3,
                 (Math.random() - 0.5) * 3,
@@ -479,6 +564,7 @@ createParticle() {
             direction.add(explosiveForce);
             direction.normalize();
         } else if (velocityStyle < 0.5) {
+            // Vortex pattern - swirling motion
             const vortexAxis = new THREE.Vector3(0, 1, 0);
             const positionFromCenter = p.clone().sub(this.origin);
             const tangential = positionFromCenter.clone().cross(vortexAxis).normalize();
@@ -492,6 +578,7 @@ createParticle() {
             ));
             direction.normalize();
         } else if (velocityStyle < 0.75) {
+            // Shockwave pattern - directional bursts
             const shockWaves = [
                 new THREE.Vector3(1, 0.3, 0.2),
                 new THREE.Vector3(-0.8, 0.5, 0.3),
@@ -509,6 +596,7 @@ createParticle() {
             ));
             direction.normalize();
         } else {
+            // Fragment pattern - axis-aligned with variation
             const fragmentDirections = [
                 new THREE.Vector3(1, 0, 0),
                 new THREE.Vector3(-1, 0, 0),
@@ -526,12 +614,14 @@ createParticle() {
                 (Math.random() - 0.5) * 2.5
             )).normalize();
         }
-
+        
+        // Apply speed variation for more natural look
         const speedVariation = Math.pow(Math.random(), 0.6); 
         const speedMultiplier = 0.1 + speedVariation * 2.0; 
         const speed = (this.speedRange[0] + Math.random() * (this.speedRange[1] - this.speedRange[0])) * speedMultiplier;
         direction.multiplyScalar(speed);
 
+        // Create Three.js sprite for rendering
         const sprite = new THREE.Sprite(this.material.clone());
         sprite.position.copy(p);
         this.particleSystem.scene.add(sprite);
@@ -548,7 +638,10 @@ createParticle() {
             active: true
         };
     }
-
+    /**
+     * Updates all particles in the emitter
+     * Applies physics, animates properties, and removes dead particles
+     */
     update(deltaTime) {
         this.timer += deltaTime;
         
@@ -614,6 +707,10 @@ createParticle() {
     }
 }
 
+/**
+ * Ship Explosion System - Manages particle-based ship explosions
+ * Creating realistic multi-phase explosions with fire, smoke, sparks, and debris
+ */
 class ShipExplosionSystem {
     constructor(scene, camera) {
         this.scene = scene;
@@ -622,7 +719,9 @@ class ShipExplosionSystem {
         this.explosions = [];
         this.gameEnded = false;
     }
-
+    /**
+     * Creates a new explosion at the specified position with multiple particle phases
+     */
     createExplosion(position, shipSize = 1.0) {
         if (this.gameEnded) return null;
         
@@ -643,7 +742,10 @@ class ShipExplosionSystem {
         this.explosions.push(explosion);
         return explosion;
     }
-
+    /**
+     * Creates the initial bright flash and primary blast wave
+     * Uses white-hot to red-orange color transition with rapid size expansion
+     */
     createInitialBlast(position, shipSize) {
         const emitter = new ParticleEmitter(position, this.particleSystem, 'fire');
         
@@ -670,7 +772,10 @@ class ShipExplosionSystem {
         
         this.particleSystem.addEmitter(emitter);
     }
-
+    /**
+     * Generates multiple fire emitters around the explosion center
+     * Creates secondary fire bursts with orange to red color progression
+     */
     createFireEmitters(position, shipSize) {
         for (let i = 0; i < 6; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -709,7 +814,10 @@ class ShipExplosionSystem {
             this.particleSystem.addEmitter(emitter);
         }
     }
-
+    /**
+     * Creates smoke emitters with delayed activation
+     * Produces dark smoke that expands and fades over time
+     */
     createSmokeEmitters(position, shipSize) {
         for (let i = 0; i < 4; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -745,7 +853,10 @@ class ShipExplosionSystem {
             this.particleSystem.addEmitter(emitter);
         }
     }
-
+    /**
+     * Generates bright spark emitters for metallic debris effects
+     * Creates white-hot sparks that fade to orange then red
+     */
     createSparkEmitters(position, shipSize) {
         for (let i = 0; i < 3; i++) {
             const randomOffset = new THREE.Vector3(
@@ -777,7 +888,10 @@ class ShipExplosionSystem {
             this.particleSystem.addEmitter(emitter);
         }
     }
-
+    /**
+     * Creates debris particle emitters for ship fragments
+     * Generates gray metallic debris that darkens over time
+     */
     createDebrisEmitters(position, shipSize) {
         for (let i = 0; i < 2; i++) {
             const randomOffset = new THREE.Vector3(
@@ -808,7 +922,10 @@ class ShipExplosionSystem {
             this.particleSystem.addEmitter(emitter);
         }
     }
-
+    /**
+     * Updates all active explosions and particle systems
+     * Removes expired explosions and updates particle physics
+     */
     update(deltaTime) {
         this.particleSystem.update(deltaTime);
         
@@ -831,7 +948,10 @@ class ShipExplosionSystem {
         this.explosions = [];
     }
 }
-
+/**
+ * Creates a ship explosion effect at the specified position
+ * Initializes explosion system
+ */
 export function createShipExplosion(scene, camera, shipPosition, ship, shipSize = 1.0) {
     if (!window.explosionSystem) {
         window.explosionSystem = new ShipExplosionSystem(scene, camera);
@@ -846,6 +966,10 @@ export function createShipExplosion(scene, camera, shipPosition, ship, shipSize 
     return explosion;
 }
 
+/**
+ * Updates all active explosions in the global system
+ * called every frame from the main game loop
+ */
 export function updateExplosions(deltaTime) {
     if (window.explosionSystem) {
         window.explosionSystem.update(deltaTime);

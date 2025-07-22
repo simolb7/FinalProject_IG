@@ -473,6 +473,10 @@ export class StartScreen {
                     <span class="key-display">SHIFT</span>
                     <span class="control-label">Boost</span>
                 </div>
+                <div class="control-group">
+                    <span class="key-display">R</span>
+                    <span class="control-label">Shockwave</span>
+                </div>
             </div>
         `;
 

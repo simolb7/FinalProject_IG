@@ -1,5 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
+/**
+* ShipController class that setups all the setting for the ship movement and boost.
+*/
 export class ShipController {
   constructor(ship, keys) {
     this.ship = ship;
@@ -27,6 +30,11 @@ export class ShipController {
     
   }
 
+  /**
+  * Manage the ship's movement and boost logic for each frame. Checking if the boost is active
+  * and applying the appropriate speed multiplier. The ship's position is updated based on the
+  * current speed and direction, with input handling for turning and pitch adjustments.
+  */
   update(delta) {
     if (!this.ship) return;
 
@@ -52,6 +60,10 @@ export class ShipController {
     this.shipSpeed = this.shipVelocity.length();
   }
 
+  /**
+  * Manage the input for ship movement and turning. Checking for key presses to adjust the ship's
+  * rotation and pitch. 
+  */
   handleInput(delta) {
     const targetRot = new THREE.Euler();
     
@@ -87,6 +99,11 @@ export class ShipController {
     this.ship.rotation.z = THREE.MathUtils.lerp(currentRotZ, targetRot.z, 0.1);
   }
 
+  /**
+  * Manages the boost, checking if the boost key is pressed and applying the boost logic. If the boost is at 0 power
+  * It blocks the boost for 1 second, in order to prevent spamming
+  * The boost state is  5 second total, with a 3 second cooldown for recharging.
+  */
   handleBoost(delta) {
     const shiftPressed = this.keys['shift'] || this.keys['shiftleft'];
 

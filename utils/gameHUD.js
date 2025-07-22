@@ -253,7 +253,76 @@ export class GameHUD {
         backdrop-filter: blur(20px);
         overflow-y: auto;
       }
-    `;
+      .shockwave-wrapper {
+        position: absolute;
+        bottom: 100px;
+        left: 20px;
+        width: 320px;
+        height: 60px;
+        background: linear-gradient(135deg, rgba(0,30,60,0.95) 0%, rgba(0,15,30,0.95) 100%);
+        border: 1px solid rgba(0,170,255,0.6);
+        border-radius: 15px;
+        backdrop-filter: blur(15px);
+        box-shadow: 
+          0 0 25px rgba(0,170,255,0.4),
+          inset 0 0 25px rgba(0,170,255,0.1),
+          0 6px 20px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        padding: 0 20px;
+        animation: fadeIn 1s ease-out;
+        overflow: hidden;
+      }
+    
+    .shockwave-wrapper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,170,255,0.8), transparent);
+      animation: scanline 2.5s infinite;
+    }
+    
+    .shockwave-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #00aaff 0%, #4499ff 100%);
+      border-radius: 12px;
+      transition: width 0.3s ease-out, background 0.3s ease;
+      box-shadow: 
+        0 0 12px rgba(0,170,255,0.8),
+        inset 0 0 12px rgba(255,255,255,0.2);
+      position: relative;
+    }
+    
+    .shockwave-bar.ready {
+      background: linear-gradient(90deg, #00aaff 0%, #66ccff 100%);
+      box-shadow: 
+        0 0 15px rgba(0,170,255,1),
+        inset 0 0 15px rgba(255,255,255,0.3);
+      animation: shockwavePulse 2s infinite;
+    }
+    
+    .shockwave-bar.cooldown {
+      background: linear-gradient(90deg, #666666 0%, #999999 100%);
+      box-shadow: 
+        0 0 8px rgba(102,102,102,0.6),
+        inset 0 0 8px rgba(255,255,255,0.1);
+    }
+    
+    @keyframes shockwavePulse {
+      0%, 100% { 
+        opacity: 1; 
+        box-shadow: 0 0 12px rgba(0,170,255,0.8), 0 0 24px rgba(0,170,255,0.4); 
+      }
+      50% { 
+        opacity: 0.8; 
+        box-shadow: 0 0 20px rgba(0,170,255,1), 0 0 40px rgba(0,170,255,0.6); 
+      }
+    }
+  `;
     document.head.appendChild(style);
   }
 
@@ -262,6 +331,7 @@ export class GameHUD {
     this.createTimerPanel();
     this.createObjectivePanel();
     this.createAdvancedEnergyBar();
+    this.createShockwaveBar()
   }
 
   createStatusPanel() {
@@ -283,6 +353,137 @@ export class GameHUD {
       </div>
     `;
     this.container.appendChild(panel);
+  }
+
+  createShockwaveBar() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'shockwave-wrapper';
+
+    const headerSection = document.createElement('div');
+    headerSection.style.cssText = `
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+      min-width: 120px;
+    `;
+
+    this.shockwaveLabel = document.createElement('span');
+    this.shockwaveLabel.textContent = '🌀 Shockwave Ready';
+    this.shockwaveLabel.style.cssText = `
+      color: #00aaff;
+      font-weight: bold;
+      font-size: 13px;
+      text-shadow: 0 0 8px rgba(0,170,255,0.8);
+    `;
+
+    headerSection.appendChild(this.shockwaveLabel);
+
+    const barSection = document.createElement('div');
+    barSection.style.cssText = `
+      flex: 1;
+      height: 24px;
+      position: relative;
+      margin-right: 12px;
+    `;
+
+    const barBackground = document.createElement('div');
+    barBackground.style.cssText = `
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      overflow: hidden;
+      position: relative;
+    `;
+
+    this.shockwaveBar = document.createElement('div');
+    this.shockwaveBar.className = 'shockwave-bar ready';
+    this.shockwaveBar.style.cssText = `
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #00aaff 0%, #66ccff 100%);
+      border-radius: 12px;
+      transition: width 0.3s ease-out, background 0.3s ease;
+      box-shadow: 
+        0 0 15px rgba(0,170,255,1),
+        inset 0 0 15px rgba(255,255,255,0.3);
+      position: relative;
+    `;
+
+    const shimmer = document.createElement('div');
+    shimmer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: scanline 2.5s infinite;
+    `;
+    this.shockwaveBar.appendChild(shimmer);
+
+    const infoSection = document.createElement('div');
+    infoSection.style.cssText = `
+      display: flex;
+      align-items: center;
+      min-width: 45px;
+    `;
+
+    this.shockwaveInfo = document.createElement('span');
+    this.shockwaveInfo.style.cssText = `
+      font-size: 13px;
+      color: #00aaff;
+      font-weight: bold;
+      text-align: right;
+      text-shadow: 0 0 6px rgba(0,170,255,0.8);
+    `;
+    this.shockwaveInfo.textContent = 'READY';
+
+    barBackground.appendChild(this.shockwaveBar);
+    barSection.appendChild(barBackground);
+    infoSection.appendChild(this.shockwaveInfo);
+
+    wrapper.appendChild(headerSection);
+    wrapper.appendChild(barSection);
+    wrapper.appendChild(infoSection);
+
+    this.container.appendChild(wrapper);
+  }
+
+  updateShockwaveBar(isReady, cooldownRemaining) {
+    if (!this.shockwaveBar || !this.shockwaveInfo || !this.shockwaveLabel) return;
+
+    if (isReady) {
+      // Shockwave pronta
+      this.shockwaveBar.style.width = '100%';
+      this.shockwaveBar.className = 'shockwave-bar ready';
+      this.shockwaveBar.style.background = 'linear-gradient(90deg, #00aaff 0%, #66ccff 100%)';
+      this.shockwaveBar.style.boxShadow = '0 0 15px rgba(0,170,255,1), inset 0 0 15px rgba(255,255,255,0.3)';
+      
+      this.shockwaveLabel.style.color = '#00aaff';
+      this.shockwaveLabel.textContent = '🌀 Shockwave';
+      this.shockwaveInfo.style.color = '#00aaff';
+      this.shockwaveInfo.textContent = 'READY';
+      
+      // Attiva l'animazione pulsante
+      this.shockwaveBar.style.animation = 'shockwavePulse 2s infinite';
+    } else {
+      // Shockwave in cooldown
+      const totalCooldown = 30; // 30 secondi di cooldown
+      const percentage = Math.max(0, ((totalCooldown - cooldownRemaining) / totalCooldown) * 100);
+      
+      this.shockwaveBar.style.width = `${percentage}%`;
+      this.shockwaveBar.className = 'shockwave-bar cooldown';
+      this.shockwaveBar.style.background = 'linear-gradient(90deg, #666666 0%, #999999 100%)';
+      this.shockwaveBar.style.boxShadow = '0 0 8px rgba(102,102,102,0.6), inset 0 0 8px rgba(255,255,255,0.1)';
+      this.shockwaveBar.style.animation = 'none';
+      
+      this.shockwaveLabel.style.color = '#999999';
+      this.shockwaveLabel.textContent = '🌀 Charging...';
+      this.shockwaveInfo.style.color = '#999999';
+      this.shockwaveInfo.textContent = `${cooldownRemaining}s`;
+    }
   }
 
   createTimerPanel() {
@@ -442,6 +643,24 @@ export class GameHUD {
     this.container.appendChild(wrapper);
   }
 
+
+  /**
+   * This function updates the energy bar based on the current boost system state. 
+   * 
+    Calculate Percentage: Determines energy level as a percentage
+    Update Visual Elements: Sets the bar width and percentage text to reflect the calculated energy level
+ 
+    Active Boost: Red/orange theme with intense glow, shows "BOOST ACTIVE"
+    Charging: Orange theme with moderate glow, shows "Charging..."
+    Ready: Green theme with bright glow, shows "Energy Ready" plus a pulsing animation
+
+    * @param {number} boostTimeUsed - Time already consumed from current boost cycle
+    * @param {number} boostDuration - Total duration of boost cycle
+    * @param {number} boostTimer - Current boost timer value
+    * @param {number} boostCooldown - Cooldown duration between boosts
+    * @param {boolean} isBoostActive - Whether boost is currently active
+    * @param {string} boostState - Current boost state ('recharging', 'ready', etc.)
+  */
   updateEnergyBar(boostTimeUsed, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState) {
     if (!this.energyBar || !this.energyPercentage || !this.energyLabel) return;
 

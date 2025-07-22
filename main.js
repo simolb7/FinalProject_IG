@@ -10,6 +10,8 @@ import { Thruster } from './utils/Thruster.js';
 import { updateAsteroidField, initOptimizedSpawn, updateOptimizedSpawn, updateAnimations, activeAstronauts, activeAsteroids, createMarsBackground, updateMarsBackground} from './utils/sceneObjects.js';
 import { CollisionSystem, createShipExplosion, updateExplosions, destroyExplosionSystem, setExplosionGameEnded } from './utils/CollisionSystem.js';
 import { StartScreen } from './utils/startScreen.js';
+import { ShockwaveSystem } from './utils/shockwave.js';
+
 
 let scene, camera, renderer, ship, starfield, timer, stormManager;;
 let shipController, cameraController, debugHUD, gameHUD;
@@ -32,6 +34,9 @@ const modelPaths = [
   'assets/models/asteroid2.glb',
   'assets/models/asteroid3.glb'
 ];
+let shockwaveSystem;
+let shockwaveLastUsed = 0;
+const SHOCKWAVE_COOLDOWN = 30000; 
 
 
 init()
@@ -54,6 +59,7 @@ async function init() {
   ship = loadedShip;
   await loadAsteroidModels();
 
+  //load the astronaut model and set the settings for the spawn system
   await initOptimizedSpawn('./assets/models/Falling.fbx', {
             maxModels: 30,
             spawnRadius: { min: 15, max: 60 },
@@ -63,6 +69,8 @@ async function init() {
         });
 
   stormManager = new SolarStormManager(scene, ship);
+  shockwaveSystem = new ShockwaveSystem(scene); //shockwave system initialization
+
   shipController = new ShipController(ship, keys);
   cameraController = new CameraController(camera, ship);
 
@@ -72,9 +80,9 @@ async function init() {
   timer = new GameTimer(62);
   setupEventListeners();
 
-  console.log('Inizializzazione completata');
+  console.log('Inizialization completed');
 
-    if (checkIfRestart()) {
+  if (checkIfRestart()) {
     startGame();
   } else {
     startScreen = new StartScreen();
@@ -95,14 +103,24 @@ function checkIfRestart() {
 }
 
 function startGame() {
-  console.log('Avvio del gioco!');
+  console.log('Loading game');
   gameState = 'PLAYING';
+  shockwaveUsed = false;
   
   timer.start();
   
   gameHUD.show();
 }
 
+
+/**
+ * Asynchronously loads the spaceship 3D model and sets up its components.
+ * This function uses GLTFLoader to load a .glb model file, scales and positions
+ * the ship in the scene, creates left and right thruster effects with particle
+ * systems, and initializes the animation (thruster flame animations).
+ *  
+ * @returns {Promise<{ship: THREE.Group}>} A promise that resolves with the loaded ship object
+ */
 async function loadSpaceship() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
@@ -128,6 +146,15 @@ async function loadSpaceship() {
   });
 }
 
+/**
+* Asynchronously loads all asteroid 3D models from predefined paths.
+* This function uses GLTFLoader to load multiple asteroid models concurrently
+* using Promise.all, ensuring all models are loaded before proceeding.
+* The loaded models are stored in the asteroidModels array for later use
+* in asteroid field generation and instantiation.
+* 
+* @returns {Promise<void>} A promise that resolves when all asteroid models are loaded
+*/
 async function loadAsteroidModels() {
   const loader = new GLTFLoader();
   asteroidModels = await Promise.all(
@@ -135,12 +162,24 @@ async function loadAsteroidModels() {
   );
 }
 
+/**
+* Sets up a dynamic three-point lighting system for the spaceship scene.
+* This function creates a professional lighting setup with ambient, key, fill,
+* and main lights. The key light casts shadows for realism, while the fill
+* light softens harsh shadows. The main point light provides localized
+* illumination that will follow the ship during gameplay.
+
+ * AmbientLight, general ambient light for the scene
+ * KeyLight, main light
+ * FillLight, ambient light, fill the shadow created by the key light
+ * MainLight, point light that follows the ship
+*/
 function setupDynamicLighting() {
-  // 1. Luce ambientale per illuminazione generale
-  ambientLight = new THREE.AmbientLight(0x404040, 2.5); // Luce soffusa
+  // 1. Ambient light for general illumination
+  ambientLight = new THREE.AmbientLight(0x404040, 2.5); 
   scene.add(ambientLight);
 
-  // 2. Luce principale (Key Light) - segue la nave
+  // 2. Main light
   keyLight = new THREE.DirectionalLight(0xfff8dc, 4);
   keyLight.position.set(-30, 10, 20);
   keyLight.castShadow = true;
@@ -148,18 +187,25 @@ function setupDynamicLighting() {
   keyLight.shadow.mapSize.height = 2048;
   scene.add(keyLight);
 
-  // 3. Luce di riempimento (Fill Light) - illumina le ombre
+  // 3. Shadow light
   fillLight = new THREE.DirectionalLight(0xfff8dc , 2  );
   fillLight.position.set(30, 0, 5);
   scene.add(fillLight);
 
-  // 4. Luce principale mobile che segue la nave
+  // 4. Main mobile light that follows the ship
   mainLight = new THREE.PointLight(0xffffff, 3 , 100);
   mainLight.position.set(0, 5, 5);
   scene.add(mainLight);
 
 }
 
+/**
+* Updates the dynamic lighting system to follow the spaceship movement.
+* This function repositions the key, fill, and main lights relative to the
+* ship's position and camera angle, creating cinematic lighting that enhances
+* the ship's visibility. Light intensity also increases
+* based on ship velocity to emphasize speed and movement.
+ */
 function updateDynamicLighting() {
   if (!ship) return;
 
@@ -199,8 +245,18 @@ function updateDynamicLighting() {
   keyLight.intensity = 1.2 * speedMultiplier;
 }
 
+
 function setupEventListeners() {
-  window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+  window.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+    
+    //shockwave
+    if (e.key.toLowerCase() === 'r') {
+      e.preventDefault(); 
+      triggerShockwave(); 
+    }
+  });
+  
   window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
   window.addEventListener('resize', onWindowResize);
 }
@@ -212,13 +268,58 @@ function onWindowResize() {
 }
 
 function restartGame() {
-  console.log('Riavvio del gioco...');
+  console.log('Restarting');
   
   sessionStorage.setItem('gameRestart', 'true');
   
   location.reload();
 }
 
+function triggerShockwave() {
+  // check
+  if (gameState !== 'PLAYING' || gameOver) {
+    return;
+  }
+  
+  const currentTime = Date.now();
+  const timeSinceLastUse = currentTime - shockwaveLastUsed;
+  
+  // Check cooldown
+  if (timeSinceLastUse < SHOCKWAVE_COOLDOWN) {
+    const remainingTime = Math.ceil((SHOCKWAVE_COOLDOWN - timeSinceLastUse) / 1000);
+    return;
+  }
+  
+  // create the shockwave effect from the ship position
+  const shockwaveOptions = {
+    maxRadius: 400,        // maximum radius of the shockwave
+    duration: 1,          // time in seconds for the shockwave to reach max radius
+    force: 600,            // force applied to asteroids
+    color: new THREE.Color(0x00aaff)
+  };
+  
+  shockwaveSystem.createShockwave(ship.position.clone(), shockwaveOptions);
+
+  // Aggiorna il timestamp dell'ultimo utilizzo
+  shockwaveLastUsed = currentTime;
+}
+
+function getShockwaveCooldownRemaining() {
+  const currentTime = Date.now();
+  const timeSinceLastUse = currentTime - shockwaveLastUsed;
+  const remaining = Math.max(0, SHOCKWAVE_COOLDOWN - timeSinceLastUse);
+  return Math.ceil(remaining / 1000); // ritorna secondi rimanenti
+}
+
+// Funzione per controllare se la shockwave è disponibile
+function isShockwaveReady() {
+  const currentTime = Date.now();
+  return (currentTime - shockwaveLastUsed) >= SHOCKWAVE_COOLDOWN;
+}
+
+/**
+* Manage the engame end logic, including stopping the game timer and blocking input
+*/
 function endGame() {
     if (gameOver) return;
     
@@ -239,11 +340,13 @@ function endGame() {
     window.removeEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 }
 
+
 function animate(time) {
   requestAnimationFrame(animate);
   if (!gameInitialized) return;
 
 
+  //render basic item in order to have a start screen inside the ship
   if (gameState === 'START') {
     if (ship && starfield) {
       starfield.position.copy(camera.position);
@@ -266,11 +369,16 @@ function animate(time) {
   updateExplosions(delta);
   
 
+  //manage the storms, checking if the ship is in a storm and slowing it down
   if (stormManager) {
     stormManager.update(delta, timeElapsed);
 
     const inStorm = stormManager.isShipInStorm();
     shipController.setSpeedMultiplier(inStorm ? 0.85 : 1.0);
+  }
+  
+  if (shockwaveSystem) {
+    shockwaveSystem.update(delta, activeAsteroids);
   }
 
   shipController.update(delta);
@@ -282,8 +390,10 @@ function animate(time) {
   
     thrusterL.setBoostMode(boostActive);
     thrusterR.setBoostMode(boostActive);
+
     thrusterL.setDirection(velocity);
     thrusterR.setDirection(velocity);
+
     thrusterL.update(delta);
     thrusterR.update(delta);
   }
@@ -297,13 +407,14 @@ function animate(time) {
     starfield.position.copy(camera.position);
     starfield.rotation.y += 0.0001;
   }
-if (animate.mixers) {
+
+  if (animate.mixers) {
     animate.mixers.forEach((m) => m.update(delta));
   }
 
   ship.getWorldDirection(playerDirection);
 
-  updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates);
+  updateAsteroidField(ship.position, playerDirection, scene, asteroidModels, dropRates, delta);
 
   updateOptimizedSpawn(
         scene,
@@ -312,7 +423,9 @@ if (animate.mixers) {
         delta
     );
 
-  updateAnimations(delta);
+  updateAnimations(delta); //for the astronaut model animation
+
+  //variabls used for the energy bar flow
   const boostTimeUsed = shipController.GetBoostTimeUsed();
   const boostDuration = shipController.getBoostDuration();
   const boostTimer = shipController.getBoostTimer();
@@ -321,6 +434,7 @@ if (animate.mixers) {
   const boostState = shipController.getBoostState();
 
   gameHUD.updateEnergyBar(boostTimeUsed, boostDuration, boostTimer, boostCooldown, isBoostActive, boostState);
+  gameHUD.updateShockwaveBar(isShockwaveReady(), getShockwaveCooldownRemaining());
 
   const collidedAstronauts = collisionSystem.checkShipAstronautCollisions(ship, activeAstronauts);
     
@@ -331,19 +445,23 @@ if (animate.mixers) {
             ship.position
         ).multiplyScalar(0.5);
     
+        //show popup score +1
         gameHUD.showScorePopup(collisionPoint, camera, renderer);
+        //shrink the astronaut model
         collisionSystem.shrinkAstronaut(astronaut, scene, ship);
 
 
-        console.log(`Collisione con astronauta: `, astronaut);
+        console.log(`Collision with astronaut: `, astronaut);
         
         const index = activeAstronauts.indexOf(astronaut);
         if (index > -1) {
+           // Remove the astronaut from the active list
             activeAstronauts.splice(index, 1);
         }
-        score += 1;
+
         timer.addTime();
-        gameHUD.updateStatus(score);
+        score += 1;
+        gameHUD.updateStatus(score);    
   });
 
   const collidedAsteroids = collisionSystem.checkShipAsteroidCollisions(ship, activeAsteroids);
@@ -352,18 +470,24 @@ if (animate.mixers) {
       collidedAsteroids.forEach(asteroid => {
 
        const index = activeAsteroids.indexOf(asteroid);
+       //remove asteroid from the active list
           if (index > -1) {
               activeAsteroids.splice(index, 1);
       }
           
-        console.log(`Collisione con asteroide: `, asteroid);
+        console.log(`Collision with asteroid: `, asteroid);
       });
 
+      //create the explosion effect after the collision
       const shipSize = ship.scale ? ship.scale.x : 1.0;
+      //inizialize the explosion system that creates the explosion effect
       createShipExplosion(scene, camera, ship.position.clone(), ship, shipSize);
       setExplosionGameEnded(true);
       
+      //lock the camera
       cameraController.enabled = false;
+
+      //leave time for the explosion effect to play
       setTimeout(() => {
         endGame();
       }, 2500);  

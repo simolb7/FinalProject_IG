@@ -1,5 +1,15 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
+/**
+* Thruster particle system class for creating realistic engine flame effects.
+* This class generates a dynamic particle system that simulates thruster flames
+* with customizable properties including power levels, boost modes, and visual
+* effects. Uses custom shaders for realistic flame rendering with color
+* transitions and additive blending.
+* 
+* @param {THREE.Object3D} parent - The parent object to attach the thruster to
+* @param {Object} options - Configuration options for the thruster system
+*/
 export class Thruster {
   constructor(parent, options = {}) {
     this.parent = parent;
@@ -34,6 +44,13 @@ export class Thruster {
     this.init();
   }
   
+  /**
+  * Initializes the thruster particle system with geometry, materials, and shaders.
+  * This function creates buffer geometry for particle positions, velocities, sizes,
+  * colors, and alpha values. It also sets up custom vertex and fragment shaders
+  * for realistic flame rendering with radial gradients and additive blending.
+  * The particle system is then added to the parent object.
+  */
   init() {
     this.geometry = new THREE.BufferGeometry();
 
@@ -54,7 +71,7 @@ export class Thruster {
     this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     this.geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
     
-    // Shader materiale personalizzato per effetto fiamma
+    // Shader materiale personalizzato per effetto fiamma, rendering with radial gradients and additive blending.
     this.material = new THREE.ShaderMaterial({
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -99,6 +116,19 @@ export class Thruster {
     this.parent.add(this.particleSystem);
   }
   
+  /**
+* Initializes a single particle with random properties within the thruster cone.
+* This function sets up particle position in a circular pattern, assigns random
+* velocity with dispersion effects, and configures initial visual properties
+* including size, color (white-blue base), and alpha transparency.
+* 
+* @param {number} index - The particle index in the arrays
+* @param {Float32Array} positions - Position buffer array
+* @param {Float32Array} velocities - Velocity buffer array
+* @param {Float32Array} sizes - Size buffer array
+* @param {Float32Array} colors - Color buffer array
+* @param {Float32Array} alphas - Alpha buffer array
+*/
   initParticle(index, positions, velocities, sizes, colors, alphas) {
     const i3 = index * 3;
     
@@ -125,7 +155,15 @@ export class Thruster {
     
     alphas[index] = 0.8 + Math.random() * 0.2;
   }
-  
+  /**
+  * Updates the thruster particle system each frame with realistic flame physics.
+  * This function handles particle movement, turbulence effects, color transitions
+  * from white-blue to yellow-orange-red, size scaling, and alpha fading.
+  * It also manages boost mode effects with increased cone expansion and different
+  * color schemes. Particles are recycled when they exceed maximum distance.
+  * 
+  * @param {number} delta - Time elapsed since last frame in seconds
+  */
   update(delta) {
     if (!this.particleSystem) return;
 
@@ -218,6 +256,19 @@ export class Thruster {
     this.geometry.attributes.alpha.needsUpdate = true;
   }
   
+  /**
+  * Resets a particle to its initial state at the thruster origin.
+  * This function repositions a particle back to the thruster mouth with
+  * randomized properties, effectively recycling it for continuous flame
+  * effect. Used when particles travel beyond the maximum flame distance.
+  * 
+  * @param {number} index - The particle index to reset
+  * @param {Float32Array} positions - Position buffer array
+  * @param {Float32Array} velocities - Velocity buffer array
+  * @param {Float32Array} sizes - Size buffer array
+  * @param {Float32Array} colors - Color buffer array
+  * @param {Float32Array} alphas - Alpha buffer array
+  */
   resetParticle(index, positions, velocities, sizes, colors, alphas) {
     const i3 = index * 3;
     
