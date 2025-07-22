@@ -105,8 +105,7 @@ function checkIfRestart() {
 function startGame() {
   console.log('Loading game');
   gameState = 'PLAYING';
-  shockwaveUsed = false;
-  
+
   timer.start();
   
   gameHUD.show();
